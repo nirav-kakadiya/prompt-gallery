@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { generateSlug } from "@/lib/utils";
+import { generateImage } from "@/lib/vertex-ai";
+import { uploadToR2 } from "@/lib/storage";
+import { convertImageToWebp, createThumbnail } from "@/lib/media-converter";
+
+export const runtime = "nodejs";
 
 // CORS headers for extension requests
 const corsHeaders = {
@@ -75,6 +80,10 @@ export async function POST(request: NextRequest) {
       attempts++;
     }
 
+    const shouldGenerateImage = !imageUrl && !!promptText?.trim();
+    const initialStatus = shouldGenerateImage ? "pending_image" : "published";
+    const publishedAt = shouldGenerateImage ? null : new Date();
+
     // Create prompt
     const prompt = await prisma.prompt.create({
       data: {
@@ -82,7 +91,7 @@ export async function POST(request: NextRequest) {
         slug,
         promptText: promptText.trim(),
         type,
-        status: "published",
+        status: initialStatus,
         tags: JSON.stringify(Array.isArray(tags) ? tags : []),
         category: category || null,
         style: style || null,
@@ -96,7 +105,7 @@ export async function POST(request: NextRequest) {
           importedVia: "extension",
           importedAt: new Date().toISOString(),
         }),
-        publishedAt: new Date(),
+        publishedAt,
       },
       select: {
         id: true,
@@ -110,6 +119,14 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: { promptCount: { increment: 1 } },
     });
+
+    // Fire-and-forget image generation for text-only prompts
+    if (shouldGenerateImage) {
+      void generateAndAttachImage({
+        promptId: prompt.id,
+        promptText: promptText.trim(),
+      });
+    }
 
     return NextResponse.json(
       {
@@ -128,6 +145,53 @@ export async function POST(request: NextRequest) {
       { success: false, error: { code: "INTERNAL_ERROR", message: "Failed to save prompt" } },
       { status: 500, headers: corsHeaders }
     );
+  }
+}
+
+async function generateAndAttachImage({
+  promptId,
+  promptText,
+}: {
+  promptId: string;
+  promptText: string;
+}) {
+  try {
+    const result = await generateImage(promptText);
+    if (!result.success || !result.imageData) {
+      console.error("[GenAI] Image generation failed for prompt:", promptId, result.error);
+      return;
+    }
+
+    const imageBuffer = Buffer.from(result.imageData, "base64");
+    const [webpBuffer, thumbnailBuffer] = await Promise.all([
+      convertImageToWebp(imageBuffer, {
+        quality: 90,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      }),
+      createThumbnail(imageBuffer, {
+        width: 400,
+        height: 400,
+        quality: 80,
+      }),
+    ]);
+
+    const [mainResult, thumbnailResult] = await Promise.all([
+      uploadToR2(webpBuffer, "image", `generated_${Date.now()}.webp`),
+      uploadToR2(thumbnailBuffer, "image", `generated_thumb_${Date.now()}.webp`),
+    ]);
+
+    await prisma.prompt.update({
+      where: { id: promptId },
+      data: {
+        imageUrl: mainResult.url,
+        thumbnailUrl: thumbnailResult.url,
+        status: "published",
+        publishedAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("[GenAI] Failed to attach generated image:", error);
   }
 }
 
