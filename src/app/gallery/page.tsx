@@ -82,8 +82,8 @@ function GalleryContent() {
 
         <div className="flex gap-6 lg:gap-8">
           {/* Sidebar (desktop) */}
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-36">
+          <aside className="hidden lg:block w-72 flex-shrink-0">
+            <div className="sticky top-28">
               <FiltersSidebar />
             </div>
           </aside>

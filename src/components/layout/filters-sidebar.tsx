@@ -82,7 +82,7 @@ export function FiltersSidebar({ className }: FiltersProps) {
   return (
     <aside
       className={cn(
-        "w-full lg:w-72 shrink-0 space-y-5",
+        "w-full space-y-5",
         className
       )}
     >
