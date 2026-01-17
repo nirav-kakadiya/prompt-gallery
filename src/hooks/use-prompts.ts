@@ -99,6 +99,27 @@ async function toggleLike(id: string): Promise<{ liked: boolean; likeCount: numb
   return result.data;
 }
 
+interface DeleteResponse {
+  success: boolean;
+  data: { id: string };
+  error?: { code: string; message: string };
+}
+
+async function deletePrompt(id: string): Promise<{ id: string }> {
+  const response = await fetch(`/api/prompts/${id}`, {
+    method: "DELETE",
+  });
+  const result: DeleteResponse = await response.json();
+
+  if (!result.success) {
+    const errorMessage = result.error?.message || "Failed to delete prompt";
+    const errorCode = result.error?.code || "UNKNOWN_ERROR";
+    throw new Error(`${errorCode}: ${errorMessage}`);
+  }
+
+  return result.data;
+}
+
 export function usePrompts() {
   const { query, types, tags, sortBy } = useFilterStore(
     useShallow((state) => ({
@@ -195,6 +216,22 @@ export function useLikePrompt() {
         old ? { ...old, likeCount: data.likeCount } : old
       );
       queryClient.invalidateQueries({ queryKey: ["prompts"] });
+    },
+  });
+}
+
+export function useDeletePrompt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deletePrompt,
+    onSuccess: (data) => {
+      // Remove the deleted prompt from cache
+      queryClient.removeQueries({ queryKey: ["prompt", data.id] });
+      // Invalidate all prompt queries to refresh the lists
+      queryClient.invalidateQueries({ queryKey: ["prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["prompts-infinite"] });
+      queryClient.invalidateQueries({ queryKey: ["user-prompts"] });
     },
   });
 }

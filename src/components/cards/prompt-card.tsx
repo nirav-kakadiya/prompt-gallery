@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2 } from "lucide-react";
+import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2 } from "lucide-react";
 import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useAuthStore } from "@/hooks/use-auth";
+import { useDeletePrompt } from "@/hooks/use-prompts";
 
 interface PromptCardProps {
   prompt: {
@@ -60,13 +62,19 @@ export function PromptCard({
   onClick,
   priority = false,
 }: PromptCardProps) {
+  const { user } = useAuthStore();
+  const deletePromptMutation = useDeletePrompt();
   const [isLiked, setIsLiked] = React.useState(prompt.isLiked || false);
   const [, setLikeCount] = React.useState(prompt.likeCount);
   const [copyCount, setCopyCount] = React.useState(prompt.copyCount);
   const [isHovered, setIsHovered] = React.useState(false);
   const [isCopying, setIsCopying] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [imageLoaded, setImageLoaded] = React.useState(false);
+  
+  // Check if current user owns this prompt
+  const isOwner = user?.id === prompt.author?.id;
 
   // Reset image states when prompt changes
   React.useEffect(() => {
@@ -144,6 +152,57 @@ export function PromptCard({
     } else {
       await copyToClipboard(url);
       toast.success("Link copied to clipboard!");
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Confirm deletion
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${prompt.title}"? This action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deletePromptMutation.mutateAsync(prompt.id);
+      toast.success("Prompt deleted successfully", {
+        description: `"${prompt.title}" has been removed`,
+        duration: 3000,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete prompt";
+      
+      // Handle different error codes
+      if (errorMessage.includes("UNAUTHORIZED")) {
+        toast.error("Authentication required", {
+          description: "Please log in to delete prompts",
+          duration: 4000,
+        });
+      } else if (errorMessage.includes("FORBIDDEN")) {
+        toast.error("Permission denied", {
+          description: "You can only delete your own prompts",
+          duration: 4000,
+        });
+      } else if (errorMessage.includes("NOT_FOUND")) {
+        toast.error("Prompt not found", {
+          description: "This prompt may have already been deleted",
+          duration: 4000,
+        });
+      } else {
+        toast.error("Failed to delete prompt", {
+          description: errorMessage.replace(/^[^:]+:\s*/, ""),
+          duration: 4000,
+        });
+      }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -317,6 +376,19 @@ export function PromptCard({
                         View details
                       </Link>
                     </DropdownMenuItem>
+                    {isOwner && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                          className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-red-950/20"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {isDeleting ? "Deleting..." : "Delete prompt"}
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
