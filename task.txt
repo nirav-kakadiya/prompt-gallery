@@ -1,0 +1,2931 @@
+# Prompt Gallery - Technical Specification Document
+
+**Version:** 2.0
+**Last Updated:** January 2025
+**Status:** Draft
+
+---
+
+## Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [Core Features](#core-features)
+3. [UI/UX Requirements](#uiux-requirements)
+4. [Technical Architecture](#technical-architecture)
+5. [Database Schema](#database-schema)
+6. [API Specification](#api-specification)
+7. [Browser Extension](#browser-extension)
+8. [Image Generation Service](#image-generation-service)
+9. [Security Requirements](#security-requirements)
+10. [Performance Requirements](#performance-requirements)
+11. [Accessibility Requirements](#accessibility-requirements)
+12. [Testing Strategy](#testing-strategy)
+13. [Deployment & CI/CD](#deployment--cicd)
+14. [Monitoring & Logging](#monitoring--logging)
+15. [Environment Setup](#environment-setup)
+16. [Implementation Phases](#implementation-phases)
+17. [Success Metrics](#success-metrics)
+18. [Appendix](#appendix)
+
+---
+
+## Project Overview
+
+### Vision
+A comprehensive prompt gallery platform where users can browse, search, and copy AI prompts for various generation types. The gallery displays prompts in an organized, visually appealing card-based layout with clear categorization, search functionality, and automatic image generation.
+
+### Key Value Propositions
+- **Discovery**: Find high-quality prompts for AI generation tools
+- **Organization**: Categorized prompts with powerful search and filtering
+- **Convenience**: One-click copy and browser extension for capturing prompts
+- **Visual Preview**: Auto-generated preview images for every prompt
+
+### Target Users
+- AI art creators and enthusiasts
+- Content creators using AI generation tools
+- Developers building AI-powered applications
+- Marketing professionals using AI for content
+
+---
+
+## Core Features
+
+### 1. Gallery Display
+
+#### 1.1 Card-Based Layout
+| Requirement | Description | Acceptance Criteria |
+|-------------|-------------|---------------------|
+| Grid Layout | Responsive masonry/grid layout | Cards align properly at all breakpoints |
+| Card Components | Image, title, type badge, copy button | All elements visible and functional |
+| Hover Effects | Interactive hover states | Smooth transitions, visible feedback |
+| Lazy Loading | Images load on scroll | LCP < 2.5s, no layout shift |
+
+#### 1.2 Card Component Structure
+```
+┌─────────────────────────────────┐
+│  [Type Badge]      [Copy Icon]  │
+│                                 │
+│         [Preview Image]         │
+│                                 │
+│─────────────────────────────────│
+│  Prompt Title                   │
+│  @author • 2.5k copies         │
+│  [tag1] [tag2] [tag3]          │
+└─────────────────────────────────┘
+```
+
+### 2. Prompt Types
+
+Four main categories with distinct visual indicators:
+
+| Type | Color | Icon | Description |
+|------|-------|------|-------------|
+| Text to Image | `#3B82F6` (Blue) | 🖼️ | Generate images from text |
+| Text to Video | `#8B5CF6` (Purple) | 🎬 | Generate videos from text |
+| Image to Image | `#10B981` (Green) | 🔄 | Transform existing images |
+| Image to Video | `#F59E0B` (Orange) | ▶️ | Create videos from images |
+
+### 3. Search & Filter System
+
+#### 3.1 Search Features
+| Feature | Description | Acceptance Criteria |
+|---------|-------------|---------------------|
+| Real-time Search | Results update as user types | Debounce 300ms, results in < 200ms |
+| Multi-field Search | Search title, prompt, tags, author | All fields indexed and searchable |
+| Keyword Highlighting | Highlight matches in results | Matches visually distinct |
+| Search Suggestions | Autocomplete suggestions | Top 5 suggestions shown |
+| Search History | Recent searches saved | Last 10 searches, clearable |
+
+#### 3.2 Filter Options
+- **Type Filter**: Single/multi-select prompt types
+- **Tag Filter**: Multi-select from available tags
+- **Category Filter**: Hierarchical category selection
+- **Style Filter**: Art style selection (photorealistic, anime, 3D, etc.)
+- **Sort Options**: Newest, Popular, Most Liked, Alphabetical, Random
+- **Date Range**: Filter by creation date (optional)
+
+#### 3.3 Filter Persistence
+- Filters persist in URL query parameters
+- Shareable filter URLs
+- Clear all filters option
+- Filter count indicators
+
+### 4. Prompt Details
+
+#### 4.1 Modal/Detail View Components
+| Component | Description |
+|-----------|-------------|
+| Full-size Media | Image/video at full resolution |
+| Prompt Text | Complete, copyable prompt with syntax highlighting |
+| Metadata | Type, created date, model used, parameters |
+| Tags | Clickable tag chips |
+| Author Info | Avatar, name, profile link |
+| Related Prompts | 4-6 similar prompts |
+| Usage Stats | Views, copies, likes |
+| Copy Variations | Copy prompt only, copy with parameters |
+
+#### 4.2 Modal Behavior
+- Keyboard navigation (Esc to close, arrows for prev/next)
+- URL updates for direct linking
+- Swipe gestures on mobile
+- Background scroll lock
+
+### 5. Copy Functionality
+
+| Feature | Description | Acceptance Criteria |
+|---------|-------------|---------------------|
+| One-click Copy | Copy button on cards | Copies in < 100ms |
+| Visual Feedback | Toast notification | Shows for 2 seconds |
+| Copy Options | Prompt only / with metadata | Clear options provided |
+| Copy Count | Track copies per prompt | Increment on each copy |
+
+---
+
+## UI/UX Requirements
+
+### Layout Structure
+
+#### Header
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  [Logo]    [Search Bar...........................]    [👤 User]  │
+│            [Browse] [Categories] [Submit] [About]                │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Main Content (Desktop)
+```
+┌────────────┬─────────────────────────────────────────────────────┐
+│            │                                                     │
+│  FILTERS   │              GALLERY GRID                          │
+│            │                                                     │
+│  [Types]   │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐                  │
+│  [Tags]    │  │     │ │     │ │     │ │     │                  │
+│  [Style]   │  └─────┘ └─────┘ └─────┘ └─────┘                  │
+│  [Sort]    │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐                  │
+│            │  │     │ │     │ │     │ │     │                  │
+│  [Clear]   │  └─────┘ └─────┘ └─────┘ └─────┘                  │
+│            │                                                     │
+│            │              [Load More / Pagination]               │
+└────────────┴─────────────────────────────────────────────────────┘
+```
+
+#### Main Content (Mobile)
+```
+┌─────────────────────────┐
+│  [🔍 Search] [⚙ Filter] │
+├─────────────────────────┤
+│  Active Filters: [×tag] │
+├─────────────────────────┤
+│  ┌─────────┐ ┌─────────┐│
+│  │         │ │         ││
+│  └─────────┘ └─────────┘│
+│  ┌─────────┐ ┌─────────┐│
+│  │         │ │         ││
+│  └─────────┘ └─────────┘│
+│         [Load More]      │
+└─────────────────────────┘
+```
+
+### Responsive Breakpoints
+
+| Breakpoint | Width | Columns | Sidebar |
+|------------|-------|---------|---------|
+| Mobile | < 640px | 1-2 | Bottom sheet |
+| Tablet | 640-1024px | 2-3 | Collapsible |
+| Desktop | 1024-1440px | 3-4 | Fixed 280px |
+| Large | > 1440px | 4-5 | Fixed 320px |
+
+### Card Design Specifications
+
+#### Dimensions
+- **Aspect Ratio**: 4:3 (default), 16:9 (video), 1:1 (square)
+- **Min Width**: 280px
+- **Max Width**: 400px
+- **Border Radius**: 12px
+- **Shadow**: `0 4px 6px -1px rgba(0, 0, 0, 0.1)`
+
+#### States
+| State | Visual Change |
+|-------|---------------|
+| Default | Base shadow, full opacity |
+| Hover | Elevated shadow, scale(1.02), overlay appears |
+| Active | Scale(0.98), darker shadow |
+| Loading | Skeleton animation |
+| Error | Error state with retry option |
+
+### Color Palette
+
+#### Light Theme
+```css
+--color-background: #FFFFFF;
+--color-surface: #F9FAFB;
+--color-primary: #3B82F6;
+--color-text-primary: #111827;
+--color-text-secondary: #6B7280;
+--color-border: #E5E7EB;
+```
+
+#### Dark Theme
+```css
+--color-background: #111827;
+--color-surface: #1F2937;
+--color-primary: #60A5FA;
+--color-text-primary: #F9FAFB;
+--color-text-secondary: #9CA3AF;
+--color-border: #374151;
+```
+
+### Typography
+
+| Element | Font | Size | Weight |
+|---------|------|------|--------|
+| H1 | Inter | 32px | 700 |
+| H2 | Inter | 24px | 600 |
+| Card Title | Inter | 16px | 600 |
+| Body | Inter | 14px | 400 |
+| Caption | Inter | 12px | 400 |
+| Badge | Inter | 11px | 500 |
+
+---
+
+## Technical Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                           CLIENT LAYER                              │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐ │
+│  │   Web App       │  │ Browser         │  │  Mobile App         │ │
+│  │   (Next.js)     │  │ Extension       │  │  (Future)           │ │
+│  └────────┬────────┘  └────────┬────────┘  └──────────┬──────────┘ │
+└───────────┼─────────────────────┼─────────────────────┼─────────────┘
+            │                     │                     │
+            ▼                     ▼                     ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                           API LAYER                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    API Gateway / Load Balancer               │   │
+│  │                    (Vercel Edge / Cloudflare)                │   │
+│  └──────────────────────────────┬──────────────────────────────┘   │
+│                                 │                                   │
+│  ┌─────────────────┐  ┌────────┴────────┐  ┌─────────────────────┐ │
+│  │  Auth Service   │  │  API Service    │  │  Image Gen Service  │ │
+│  │  (NextAuth)     │  │  (Next.js API)  │  │  (Queue Worker)     │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+            │                     │                     │
+            ▼                     ▼                     ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                          DATA LAYER                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐ │
+│  │   PostgreSQL    │  │     Redis       │  │  Cloud Storage      │ │
+│  │   (Supabase)    │  │   (Cache)       │  │  (Cloudinary/S3)    │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       EXTERNAL SERVICES                             │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐ │
+│  │  Vertex AI      │  │   Algolia       │  │    Analytics        │ │
+│  │  (Gemini 2.5)   │  │   (Search)      │  │    (PostHog)        │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| Frontend | Next.js 14+ (App Router) | React framework with SSR |
+| Styling | Tailwind CSS + shadcn/ui | Utility-first CSS |
+| State | Zustand | Lightweight state management |
+| Data Fetching | TanStack Query | Server state management |
+| Database | PostgreSQL (Supabase) | Primary data store |
+| Cache | Redis (Upstash) | Session, rate limiting, cache |
+| Search | Algolia | Full-text search |
+| Storage | Cloudinary | Image/video storage & optimization |
+| Auth | NextAuth.js v5 | Authentication |
+| Image Gen | Vertex AI (Gemini 2.5 Flash) | Auto image generation |
+| Queue | BullMQ / Inngest | Background job processing |
+| Analytics | PostHog | Product analytics |
+| Monitoring | Sentry | Error tracking |
+| Deployment | Vercel | Hosting & edge functions |
+
+### Data Models
+
+#### TypeScript Interfaces
+
+```typescript
+// Prompt Entity
+interface Prompt {
+  id: string;                    // UUID v4
+  title: string;                 // Max 100 chars
+  slug: string;                  // URL-friendly identifier
+  promptText: string;            // Max 10,000 chars
+  type: PromptType;
+  status: PromptStatus;
+
+  // Media
+  imageUrl: string | null;
+  thumbnailUrl: string | null;
+  videoUrl: string | null;
+  blurhash: string | null;       // Placeholder blur hash
+
+  // Categorization
+  tags: string[];                // Max 10 tags
+  category: string | null;
+  style: string | null;
+
+  // Author
+  authorId: string | null;
+  author: User | null;
+
+  // Metadata
+  metadata: PromptMetadata;
+
+  // Stats
+  viewCount: number;
+  copyCount: number;
+  likeCount: number;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+
+  // Relations
+  relatedPromptIds: string[];
+}
+
+type PromptType =
+  | 'text-to-image'
+  | 'text-to-video'
+  | 'image-to-image'
+  | 'image-to-video';
+
+type PromptStatus =
+  | 'draft'
+  | 'pending_review'
+  | 'pending_image'
+  | 'processing'
+  | 'published'
+  | 'rejected'
+  | 'archived';
+
+interface PromptMetadata {
+  model?: string;               // e.g., "DALL-E 3", "Midjourney v6"
+  modelVersion?: string;
+  negativePrompt?: string;
+  parameters?: {
+    steps?: number;
+    cfgScale?: number;
+    seed?: number;
+    sampler?: string;
+    width?: number;
+    height?: number;
+    [key: string]: unknown;
+  };
+  sourceUrl?: string;           // Where prompt was captured from
+  submissionSource?: 'web' | 'extension' | 'api';
+}
+
+// User Entity
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  username: string;             // Unique, URL-friendly
+  avatar: string | null;
+  bio: string | null;
+  role: UserRole;
+
+  // Stats
+  promptCount: number;
+  totalCopies: number;
+  totalLikes: number;
+  followerCount: number;
+  followingCount: number;
+
+  // Settings
+  preferences: UserPreferences;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastActiveAt: Date;
+}
+
+type UserRole = 'user' | 'creator' | 'moderator' | 'admin';
+
+interface UserPreferences {
+  theme: 'light' | 'dark' | 'system';
+  emailNotifications: boolean;
+  defaultPromptType: PromptType;
+  language: string;
+}
+
+// Filter State
+interface FilterState {
+  query: string;
+  types: PromptType[];
+  tags: string[];
+  categories: string[];
+  styles: string[];
+  authors: string[];
+  sortBy: SortOption;
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
+}
+
+type SortOption =
+  | 'newest'
+  | 'oldest'
+  | 'popular'
+  | 'most_copied'
+  | 'most_liked'
+  | 'alphabetical'
+  | 'random';
+
+// Collection Entity
+interface Collection {
+  id: string;
+  name: string;
+  description: string | null;
+  coverImageUrl: string | null;
+  isPublic: boolean;
+  ownerId: string;
+  promptIds: string[];
+  promptCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Like Entity
+interface Like {
+  id: string;
+  userId: string;
+  promptId: string;
+  createdAt: Date;
+}
+
+// Tag Entity
+interface Tag {
+  id: string;
+  name: string;
+  slug: string;
+  promptCount: number;
+  category: string | null;
+}
+```
+
+---
+
+## Database Schema
+
+### PostgreSQL Schema
+
+```sql
+-- Enable extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+-- Enum types
+CREATE TYPE prompt_type AS ENUM (
+  'text-to-image',
+  'text-to-video',
+  'image-to-image',
+  'image-to-video'
+);
+
+CREATE TYPE prompt_status AS ENUM (
+  'draft',
+  'pending_review',
+  'pending_image',
+  'processing',
+  'published',
+  'rejected',
+  'archived'
+);
+
+CREATE TYPE user_role AS ENUM ('user', 'creator', 'moderator', 'admin');
+
+CREATE TYPE submission_source AS ENUM ('web', 'extension', 'api');
+
+-- Users table
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password_hash VARCHAR(255),
+  avatar_url TEXT,
+  bio TEXT,
+  role user_role DEFAULT 'user',
+  preferences JSONB DEFAULT '{}',
+  prompt_count INTEGER DEFAULT 0,
+  total_copies INTEGER DEFAULT 0,
+  total_likes INTEGER DEFAULT 0,
+  follower_count INTEGER DEFAULT 0,
+  following_count INTEGER DEFAULT 0,
+  email_verified_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_active_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Prompts table
+CREATE TABLE prompts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(100) NOT NULL,
+  slug VARCHAR(120) UNIQUE NOT NULL,
+  prompt_text TEXT NOT NULL CHECK (char_length(prompt_text) <= 10000),
+  type prompt_type NOT NULL,
+  status prompt_status DEFAULT 'draft',
+
+  -- Media
+  image_url TEXT,
+  thumbnail_url TEXT,
+  video_url TEXT,
+  blurhash VARCHAR(50),
+
+  -- Categorization
+  tags TEXT[] DEFAULT '{}',
+  category VARCHAR(50),
+  style VARCHAR(50),
+
+  -- Author
+  author_id UUID REFERENCES users(id) ON DELETE SET NULL,
+
+  -- Metadata
+  metadata JSONB DEFAULT '{}',
+
+  -- Stats (denormalized for performance)
+  view_count INTEGER DEFAULT 0,
+  copy_count INTEGER DEFAULT 0,
+  like_count INTEGER DEFAULT 0,
+
+  -- Timestamps
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  published_at TIMESTAMP WITH TIME ZONE,
+
+  -- Search
+  search_vector TSVECTOR
+);
+
+-- Tags table
+CREATE TABLE tags (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(50) UNIQUE NOT NULL,
+  slug VARCHAR(60) UNIQUE NOT NULL,
+  category VARCHAR(50),
+  prompt_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Categories table
+CREATE TABLE categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(50) UNIQUE NOT NULL,
+  slug VARCHAR(60) UNIQUE NOT NULL,
+  description TEXT,
+  icon VARCHAR(50),
+  parent_id UUID REFERENCES categories(id),
+  prompt_count INTEGER DEFAULT 0,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Collections table
+CREATE TABLE collections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  cover_image_url TEXT,
+  is_public BOOLEAN DEFAULT true,
+  owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  prompt_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Collection prompts junction table
+CREATE TABLE collection_prompts (
+  collection_id UUID REFERENCES collections(id) ON DELETE CASCADE,
+  prompt_id UUID REFERENCES prompts(id) ON DELETE CASCADE,
+  added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  display_order INTEGER DEFAULT 0,
+  PRIMARY KEY (collection_id, prompt_id)
+);
+
+-- Likes table
+CREATE TABLE likes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  prompt_id UUID NOT NULL REFERENCES prompts(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE (user_id, prompt_id)
+);
+
+-- Follows table
+CREATE TABLE follows (
+  follower_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  following_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (follower_id, following_id),
+  CHECK (follower_id != following_id)
+);
+
+-- Image generation jobs table
+CREATE TABLE image_generation_jobs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  prompt_id UUID NOT NULL REFERENCES prompts(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  attempts INTEGER DEFAULT 0,
+  max_attempts INTEGER DEFAULT 3,
+  error_message TEXT,
+  started_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- API keys for extension auth
+CREATE TABLE api_keys (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  key_hash VARCHAR(255) NOT NULL,
+  key_prefix VARCHAR(10) NOT NULL,
+  scopes TEXT[] DEFAULT '{}',
+  last_used_at TIMESTAMP WITH TIME ZONE,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_prompts_status ON prompts(status);
+CREATE INDEX idx_prompts_type ON prompts(type);
+CREATE INDEX idx_prompts_author ON prompts(author_id);
+CREATE INDEX idx_prompts_created ON prompts(created_at DESC);
+CREATE INDEX idx_prompts_published ON prompts(published_at DESC) WHERE status = 'published';
+CREATE INDEX idx_prompts_popular ON prompts(copy_count DESC) WHERE status = 'published';
+CREATE INDEX idx_prompts_tags ON prompts USING GIN(tags);
+CREATE INDEX idx_prompts_search ON prompts USING GIN(search_vector);
+CREATE INDEX idx_likes_user ON likes(user_id);
+CREATE INDEX idx_likes_prompt ON likes(prompt_id);
+CREATE INDEX idx_collections_owner ON collections(owner_id);
+CREATE INDEX idx_jobs_status ON image_generation_jobs(status) WHERE status IN ('pending', 'processing');
+
+-- Full-text search trigger
+CREATE OR REPLACE FUNCTION update_prompt_search_vector()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.search_vector :=
+    setweight(to_tsvector('english', COALESCE(NEW.title, '')), 'A') ||
+    setweight(to_tsvector('english', COALESCE(NEW.prompt_text, '')), 'B') ||
+    setweight(to_tsvector('english', COALESCE(array_to_string(NEW.tags, ' '), '')), 'C');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_prompt_search
+  BEFORE INSERT OR UPDATE ON prompts
+  FOR EACH ROW EXECUTE FUNCTION update_prompt_search_vector();
+
+-- Updated_at trigger
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_prompts_updated
+  BEFORE UPDATE ON prompts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trigger_users_updated
+  BEFORE UPDATE ON users
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trigger_collections_updated
+  BEFORE UPDATE ON collections
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+```
+
+### Entity Relationship Diagram
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│    users    │     │   prompts   │     │    tags     │
+├─────────────┤     ├─────────────┤     ├─────────────┤
+│ id (PK)     │◄────│ author_id   │     │ id (PK)     │
+│ email       │     │ id (PK)     │     │ name        │
+│ username    │     │ title       │     │ slug        │
+│ name        │     │ prompt_text │     │ prompt_count│
+│ role        │     │ type        │     └─────────────┘
+└──────┬──────┘     │ tags[]      │
+       │            │ status      │
+       │            └──────┬──────┘
+       │                   │
+       ▼                   ▼
+┌─────────────┐     ┌─────────────┐
+│    likes    │     │ collections │
+├─────────────┤     ├─────────────┤
+│ id (PK)     │     │ id (PK)     │
+│ user_id (FK)│     │ owner_id(FK)│
+│ prompt_id   │     │ name        │
+└─────────────┘     └──────┬──────┘
+                           │
+                           ▼
+                    ┌──────────────────┐
+                    │collection_prompts│
+                    ├──────────────────┤
+                    │ collection_id    │
+                    │ prompt_id        │
+                    └──────────────────┘
+```
+
+---
+
+## API Specification
+
+### Base URL
+```
+Production: https://api.promptgallery.com/v1
+Staging: https://staging-api.promptgallery.com/v1
+Development: http://localhost:3000/api/v1
+```
+
+### Authentication
+- **Method**: Bearer Token (JWT)
+- **Header**: `Authorization: Bearer <token>`
+- **API Keys**: For extension/third-party access
+
+### Rate Limiting
+
+| Tier | Requests/min | Requests/day |
+|------|--------------|--------------|
+| Anonymous | 30 | 1,000 |
+| Authenticated | 100 | 10,000 |
+| Premium | 300 | 50,000 |
+| API Key | 500 | 100,000 |
+
+### Response Format
+
+#### Success Response
+```json
+{
+  "success": true,
+  "data": { ... },
+  "meta": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 150,
+    "totalPages": 8
+  }
+}
+```
+
+#### Error Response
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid prompt type",
+    "details": [
+      {
+        "field": "type",
+        "message": "Must be one of: text-to-image, text-to-video, image-to-image, image-to-video"
+      }
+    ]
+  }
+}
+```
+
+### Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `VALIDATION_ERROR` | 400 | Invalid request data |
+| `UNAUTHORIZED` | 401 | Missing or invalid auth |
+| `FORBIDDEN` | 403 | Insufficient permissions |
+| `NOT_FOUND` | 404 | Resource not found |
+| `CONFLICT` | 409 | Resource already exists |
+| `RATE_LIMITED` | 429 | Too many requests |
+| `INTERNAL_ERROR` | 500 | Server error |
+| `SERVICE_UNAVAILABLE` | 503 | Service temporarily down |
+
+### Endpoints
+
+#### Prompts
+
+##### List Prompts
+```
+GET /prompts
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| q | string | - | Search query |
+| type | string[] | - | Filter by type(s) |
+| tags | string[] | - | Filter by tag(s) |
+| category | string | - | Filter by category |
+| style | string | - | Filter by style |
+| author | string | - | Filter by author ID |
+| sort | string | newest | Sort order |
+| page | number | 1 | Page number |
+| pageSize | number | 20 | Items per page (max 100) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "Cyberpunk City at Night",
+      "slug": "cyberpunk-city-at-night",
+      "promptText": "A futuristic cyberpunk city at night with neon lights...",
+      "type": "text-to-image",
+      "thumbnailUrl": "https://cdn.example.com/thumb/abc123.webp",
+      "tags": ["cyberpunk", "city", "neon"],
+      "author": {
+        "id": "user-123",
+        "name": "John Doe",
+        "username": "johndoe",
+        "avatar": "https://cdn.example.com/avatars/user-123.jpg"
+      },
+      "copyCount": 1234,
+      "likeCount": 567,
+      "createdAt": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 150,
+    "totalPages": 8
+  }
+}
+```
+
+##### Get Single Prompt
+```
+GET /prompts/:id
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Cyberpunk City at Night",
+    "slug": "cyberpunk-city-at-night",
+    "promptText": "A futuristic cyberpunk city at night with neon lights reflecting off wet streets, towering skyscrapers with holographic advertisements, flying cars in the distance, cinematic lighting, ultra detailed, 8k resolution",
+    "type": "text-to-image",
+    "status": "published",
+    "imageUrl": "https://cdn.example.com/images/abc123.webp",
+    "thumbnailUrl": "https://cdn.example.com/thumb/abc123.webp",
+    "blurhash": "LEHV6nWB2yk8pyoJadR*.7kCMdnj",
+    "tags": ["cyberpunk", "city", "neon", "futuristic"],
+    "category": "digital-art",
+    "style": "photorealistic",
+    "author": {
+      "id": "user-123",
+      "name": "John Doe",
+      "username": "johndoe",
+      "avatar": "https://cdn.example.com/avatars/user-123.jpg",
+      "bio": "AI art enthusiast",
+      "promptCount": 45
+    },
+    "metadata": {
+      "model": "Midjourney v6",
+      "parameters": {
+        "ar": "16:9",
+        "style": "raw"
+      }
+    },
+    "viewCount": 5678,
+    "copyCount": 1234,
+    "likeCount": 567,
+    "isLiked": false,
+    "createdAt": "2024-01-15T10:30:00Z",
+    "publishedAt": "2024-01-15T11:00:00Z",
+    "relatedPrompts": [
+      {
+        "id": "prompt-456",
+        "title": "Neon Tokyo Streets",
+        "thumbnailUrl": "https://cdn.example.com/thumb/def456.webp",
+        "type": "text-to-image"
+      }
+    ]
+  }
+}
+```
+
+##### Create Prompt
+```
+POST /prompts
+```
+
+**Request Body:**
+```json
+{
+  "title": "Cyberpunk City at Night",
+  "promptText": "A futuristic cyberpunk city...",
+  "type": "text-to-image",
+  "tags": ["cyberpunk", "city", "neon"],
+  "category": "digital-art",
+  "style": "photorealistic",
+  "metadata": {
+    "model": "Midjourney v6",
+    "sourceUrl": "https://example.com/source"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "slug": "cyberpunk-city-at-night",
+    "status": "pending_image",
+    "imageGenerationStatus": "pending",
+    "estimatedProcessingTime": 30
+  }
+}
+```
+
+##### Submit Prompt from Extension
+```
+POST /prompts/submit
+```
+
+**Request Body:**
+```json
+{
+  "promptText": "A futuristic cyberpunk city...",
+  "type": "text-to-image",
+  "title": "Cyberpunk City at Night",
+  "tags": ["cyberpunk", "city"],
+  "sourceUrl": "https://midjourney.com/example",
+  "metadata": {
+    "extensionVersion": "1.0.0",
+    "browser": "chrome"
+  }
+}
+```
+
+##### Update Prompt
+```
+PUT /prompts/:id
+```
+
+##### Delete Prompt
+```
+DELETE /prompts/:id
+```
+
+##### Like/Unlike Prompt
+```
+POST /prompts/:id/like
+DELETE /prompts/:id/like
+```
+
+##### Copy Prompt (Track)
+```
+POST /prompts/:id/copy
+```
+
+##### Get Generation Status
+```
+GET /prompts/:id/generation-status
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "processing",
+    "progress": 65,
+    "estimatedTimeRemaining": 12,
+    "imageUrl": null,
+    "error": null
+  }
+}
+```
+
+#### Users
+
+##### Get Current User
+```
+GET /users/me
+```
+
+##### Get User Profile
+```
+GET /users/:username
+```
+
+##### Update Profile
+```
+PUT /users/me
+```
+
+##### Get User's Prompts
+```
+GET /users/:username/prompts
+```
+
+##### Get User's Collections
+```
+GET /users/:username/collections
+```
+
+##### Get User's Likes
+```
+GET /users/:username/likes
+```
+
+##### Follow/Unfollow User
+```
+POST /users/:username/follow
+DELETE /users/:username/follow
+```
+
+#### Collections
+
+##### List User's Collections
+```
+GET /collections
+```
+
+##### Create Collection
+```
+POST /collections
+```
+
+##### Get Collection
+```
+GET /collections/:id
+```
+
+##### Update Collection
+```
+PUT /collections/:id
+```
+
+##### Delete Collection
+```
+DELETE /collections/:id
+```
+
+##### Add Prompt to Collection
+```
+POST /collections/:id/prompts
+```
+
+##### Remove Prompt from Collection
+```
+DELETE /collections/:id/prompts/:promptId
+```
+
+#### Search & Filters
+
+##### Search Prompts
+```
+GET /search
+```
+
+##### Get Available Filters
+```
+GET /filters
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "types": [
+      { "value": "text-to-image", "label": "Text to Image", "count": 1234 },
+      { "value": "text-to-video", "label": "Text to Video", "count": 567 }
+    ],
+    "tags": [
+      { "value": "portrait", "label": "Portrait", "count": 890 },
+      { "value": "landscape", "label": "Landscape", "count": 756 }
+    ],
+    "categories": [
+      { "value": "digital-art", "label": "Digital Art", "count": 2345 }
+    ],
+    "styles": [
+      { "value": "photorealistic", "label": "Photorealistic", "count": 1567 }
+    ]
+  }
+}
+```
+
+##### Get Popular Tags
+```
+GET /tags/popular
+```
+
+#### Authentication
+
+##### Login
+```
+POST /auth/login
+```
+
+##### Register
+```
+POST /auth/register
+```
+
+##### Logout
+```
+POST /auth/logout
+```
+
+##### Refresh Token
+```
+POST /auth/refresh
+```
+
+##### Extension Auth
+```
+POST /auth/extension/login
+POST /auth/extension/verify
+```
+
+##### Generate API Key
+```
+POST /auth/api-keys
+```
+
+##### Revoke API Key
+```
+DELETE /auth/api-keys/:id
+```
+
+---
+
+## Browser Extension
+
+### Overview
+Chrome/Firefox/Edge extension for capturing prompts from any website and submitting them to the gallery with automatic image generation.
+
+### Extension Architecture
+
+```
+prompt-gallery-extension/
+├── manifest.json           # Extension manifest (v3)
+├── background/
+│   └── service-worker.ts   # Background service worker
+├── content/
+│   └── content-script.ts   # Content script for page interaction
+├── popup/
+│   ├── popup.html          # Popup UI
+│   ├── popup.tsx           # Popup React component
+│   └── popup.css           # Popup styles
+├── options/
+│   ├── options.html        # Options page
+│   └── options.tsx         # Options React component
+├── shared/
+│   ├── api.ts              # API client
+│   ├── storage.ts          # Chrome storage utilities
+│   ├── types.ts            # TypeScript types
+│   └── constants.ts        # Constants
+├── assets/
+│   └── icons/              # Extension icons
+└── utils/
+    ├── auth.ts             # Authentication utilities
+    └── messaging.ts        # Message passing utilities
+```
+
+### Manifest (V3)
+
+```json
+{
+  "manifest_version": 3,
+  "name": "Prompt Gallery",
+  "version": "1.0.0",
+  "description": "Capture and save AI prompts from any website to Prompt Gallery",
+
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "storage",
+    "alarms"
+  ],
+
+  "host_permissions": [
+    "https://api.promptgallery.com/*",
+    "https://promptgallery.com/*"
+  ],
+
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+
+  "commands": {
+    "quick-add": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+P",
+        "mac": "Command+Shift+P"
+      },
+      "description": "Quick add selected text to Prompt Gallery"
+    }
+  }
+}
+```
+
+### User Flows
+
+#### Flow 1: Context Menu Capture
+1. User selects text on any webpage
+2. Right-clicks to open context menu
+3. Clicks "Add to Prompt Gallery"
+4. Popup opens with pre-filled prompt text
+5. User selects type and adds optional metadata
+6. User clicks Submit
+7. Extension submits to API
+8. Success notification shown with link to prompt
+
+#### Flow 2: Popup Manual Entry
+1. User clicks extension icon
+2. Popup opens
+3. User pastes/types prompt text
+4. User fills in metadata
+5. Submits to gallery
+
+#### Flow 3: Keyboard Shortcut
+1. User selects text
+2. Presses Ctrl+Shift+P
+3. Quick dialog appears
+4. User selects type
+5. One-click submit
+
+### Popup UI
+
+```
+┌─────────────────────────────────────┐
+│  [Logo] Prompt Gallery        [×]  │
+├─────────────────────────────────────┤
+│  ┌─────────────────────────────────┐│
+│  │ Selected prompt text appears   ││
+│  │ here...                        ││
+│  └─────────────────────────────────┘│
+│                                     │
+│  Prompt Type                        │
+│  ○ Text to Image  ○ Text to Video  │
+│  ○ Image to Image ○ Image to Video │
+│                                     │
+│  Title (optional)                   │
+│  ┌─────────────────────────────────┐│
+│  │                                 ││
+│  └─────────────────────────────────┘│
+│                                     │
+│  Tags (comma separated)             │
+│  ┌─────────────────────────────────┐│
+│  │                                 ││
+│  └─────────────────────────────────┘│
+│                                     │
+│  Source: https://example.com/...   │
+│                                     │
+│  ┌─────────────────────────────────┐│
+│  │      Add to Gallery             ││
+│  └─────────────────────────────────┘│
+│                                     │
+│  [View My Prompts] [Settings]       │
+└─────────────────────────────────────┘
+```
+
+### Content Script
+
+```typescript
+// content-script.ts
+
+interface SelectionData {
+  text: string;
+  url: string;
+  title: string;
+}
+
+class PromptCaptureContent {
+  private lastSelection: string = '';
+
+  constructor() {
+    this.init();
+  }
+
+  private init(): void {
+    // Listen for selection changes
+    document.addEventListener('mouseup', this.handleSelection.bind(this));
+    document.addEventListener('keyup', this.handleSelection.bind(this));
+
+    // Listen for messages from background script
+    chrome.runtime.onMessage.addListener(this.handleMessage.bind(this));
+  }
+
+  private handleSelection(): void {
+    const selection = window.getSelection()?.toString().trim() || '';
+
+    if (selection.length > 20 && selection !== this.lastSelection) {
+      this.lastSelection = selection;
+
+      // Notify background script that text is selected
+      chrome.runtime.sendMessage({
+        type: 'TEXT_SELECTED',
+        data: {
+          text: selection,
+          url: window.location.href,
+          title: document.title
+        }
+      });
+    }
+  }
+
+  private handleMessage(
+    message: { type: string },
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response: SelectionData) => void
+  ): boolean {
+    if (message.type === 'GET_SELECTION') {
+      const selection = window.getSelection()?.toString().trim() || '';
+      sendResponse({
+        text: selection,
+        url: window.location.href,
+        title: document.title
+      });
+    }
+    return true;
+  }
+}
+
+new PromptCaptureContent();
+```
+
+### Background Service Worker
+
+```typescript
+// service-worker.ts
+
+import { ApiClient } from '../shared/api';
+import { StorageManager } from '../shared/storage';
+
+class BackgroundService {
+  private api: ApiClient;
+  private storage: StorageManager;
+
+  constructor() {
+    this.api = new ApiClient();
+    this.storage = new StorageManager();
+    this.init();
+  }
+
+  private init(): void {
+    // Setup context menu on install
+    chrome.runtime.onInstalled.addListener(() => this.setupContextMenu());
+
+    // Handle context menu clicks
+    chrome.contextMenus.onClicked.addListener(this.handleContextMenuClick.bind(this));
+
+    // Handle keyboard shortcuts
+    chrome.commands.onCommand.addListener(this.handleCommand.bind(this));
+
+    // Handle messages from popup/content scripts
+    chrome.runtime.onMessage.addListener(this.handleMessage.bind(this));
+
+    // Setup token refresh alarm
+    chrome.alarms.create('refreshToken', { periodInMinutes: 50 });
+    chrome.alarms.onAlarm.addListener(this.handleAlarm.bind(this));
+  }
+
+  private setupContextMenu(): void {
+    chrome.contextMenus.create({
+      id: 'add-to-gallery',
+      title: 'Add to Prompt Gallery',
+      contexts: ['selection']
+    });
+
+    // Submenu for quick type selection
+    const types = [
+      { id: 'text-to-image', title: 'Add as Text to Image' },
+      { id: 'text-to-video', title: 'Add as Text to Video' },
+      { id: 'image-to-image', title: 'Add as Image to Image' },
+      { id: 'image-to-video', title: 'Add as Image to Video' }
+    ];
+
+    types.forEach(type => {
+      chrome.contextMenus.create({
+        id: `add-${type.id}`,
+        parentId: 'add-to-gallery',
+        title: type.title,
+        contexts: ['selection']
+      });
+    });
+  }
+
+  private async handleContextMenuClick(
+    info: chrome.contextMenus.OnClickData,
+    tab?: chrome.tabs.Tab
+  ): Promise<void> {
+    if (!info.selectionText || !tab?.id) return;
+
+    const menuId = info.menuItemId as string;
+
+    if (menuId === 'add-to-gallery') {
+      // Open popup with selected text
+      await this.openPopupWithSelection(info.selectionText, tab.url || '');
+    } else if (menuId.startsWith('add-')) {
+      // Quick add with specific type
+      const type = menuId.replace('add-', '');
+      await this.quickSubmit(info.selectionText, type, tab.url || '');
+    }
+  }
+
+  private async handleCommand(command: string): Promise<void> {
+    if (command === 'quick-add') {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
+
+      const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_SELECTION' });
+      if (response?.text) {
+        await this.openPopupWithSelection(response.text, response.url);
+      }
+    }
+  }
+
+  private async openPopupWithSelection(text: string, url: string): Promise<void> {
+    await this.storage.set('pendingPrompt', { text, url });
+    chrome.action.openPopup();
+  }
+
+  private async quickSubmit(text: string, type: string, url: string): Promise<void> {
+    try {
+      const result = await this.api.submitPrompt({
+        promptText: text,
+        type: type as any,
+        sourceUrl: url,
+        metadata: {
+          submissionSource: 'extension',
+          extensionVersion: chrome.runtime.getManifest().version
+        }
+      });
+
+      // Show success notification
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'assets/icons/icon128.png',
+        title: 'Prompt Added!',
+        message: 'Your prompt has been added to the gallery.'
+      });
+    } catch (error) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'assets/icons/icon128.png',
+        title: 'Error',
+        message: 'Failed to add prompt. Please try again.'
+      });
+    }
+  }
+
+  private handleMessage(message: any, sender: any, sendResponse: any): boolean {
+    // Handle various message types
+    switch (message.type) {
+      case 'SUBMIT_PROMPT':
+        this.api.submitPrompt(message.data)
+          .then(sendResponse)
+          .catch(error => sendResponse({ error: error.message }));
+        return true;
+
+      case 'GET_AUTH_STATUS':
+        this.storage.get('authToken')
+          .then(token => sendResponse({ isAuthenticated: !!token }))
+          .catch(() => sendResponse({ isAuthenticated: false }));
+        return true;
+    }
+    return false;
+  }
+
+  private async handleAlarm(alarm: chrome.alarms.Alarm): Promise<void> {
+    if (alarm.name === 'refreshToken') {
+      await this.api.refreshToken();
+    }
+  }
+}
+
+new BackgroundService();
+```
+
+### Testing Checklist
+
+| Test Case | Expected Result |
+|-----------|-----------------|
+| Select text > right-click > Add to Gallery | Context menu appears |
+| Click context menu item | Popup opens with text |
+| Submit prompt with valid data | Success notification |
+| Submit prompt while logged out | Login prompt shown |
+| Keyboard shortcut with selection | Quick add dialog |
+| Extension icon click | Popup opens |
+| Submit empty prompt | Validation error |
+| Network offline | Offline error message |
+
+---
+
+## Image Generation Service
+
+### Overview
+Automatic image generation for submitted prompts using Vertex AI (Gemini 2.5 Flash / Imagen).
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Image Generation Pipeline                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐ │
+│  │   API       │───▶│   Queue     │───▶│  Worker Process     │ │
+│  │   Server    │    │   (BullMQ)  │    │                     │ │
+│  └─────────────┘    └─────────────┘    │  ┌───────────────┐  │ │
+│                                        │  │ Vertex AI     │  │ │
+│                                        │  │ (Gemini 2.5)  │  │ │
+│                                        │  └───────┬───────┘  │ │
+│                                        │          │          │ │
+│                                        │  ┌───────▼───────┐  │ │
+│                                        │  │ Image Process │  │ │
+│                                        │  │ (Sharp)       │  │ │
+│                                        │  └───────┬───────┘  │ │
+│                                        │          │          │ │
+│                                        │  ┌───────▼───────┐  │ │
+│                                        │  │ Cloud Storage │  │ │
+│                                        │  │ (Cloudinary)  │  │ │
+│                                        │  └───────────────┘  │ │
+│                                        └─────────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Service Account Setup
+
+#### Google Cloud Configuration
+1. Create Google Cloud Project
+2. Enable Vertex AI API
+3. Create Service Account with roles:
+   - `roles/aiplatform.user` - Vertex AI access
+   - `roles/storage.objectAdmin` - Cloud Storage (if using GCS)
+4. Generate JSON key file
+5. Store securely (never commit to repo)
+
+#### Environment Variables
+```bash
+# .env.local
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+# OR use base64 encoded key
+GOOGLE_SERVICE_ACCOUNT_KEY=base64_encoded_json_key
+
+# Image storage
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Queue
+REDIS_URL=redis://localhost:6379
+```
+
+### Image Generation Worker
+
+```typescript
+// workers/image-generation.worker.ts
+
+import { Worker, Job } from 'bullmq';
+import { VertexAI } from '@google-cloud/vertexai';
+import { v2 as cloudinary } from 'cloudinary';
+import sharp from 'sharp';
+import { prisma } from '../lib/prisma';
+
+interface ImageGenerationJob {
+  promptId: string;
+  promptText: string;
+  type: string;
+  referenceImageUrl?: string;
+}
+
+interface GenerationResult {
+  imageUrl: string;
+  thumbnailUrl: string;
+  blurhash: string;
+}
+
+class ImageGenerationWorker {
+  private worker: Worker;
+  private vertexAI: VertexAI;
+
+  constructor() {
+    this.initVertexAI();
+    this.initCloudinary();
+    this.initWorker();
+  }
+
+  private initVertexAI(): void {
+    this.vertexAI = new VertexAI({
+      project: process.env.GOOGLE_CLOUD_PROJECT!,
+      location: 'us-central1'
+    });
+  }
+
+  private initCloudinary(): void {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+  }
+
+  private initWorker(): void {
+    this.worker = new Worker(
+      'image-generation',
+      this.processJob.bind(this),
+      {
+        connection: {
+          url: process.env.REDIS_URL
+        },
+        concurrency: 3,
+        limiter: {
+          max: 10,
+          duration: 60000 // 10 per minute
+        }
+      }
+    );
+
+    this.worker.on('completed', this.onCompleted.bind(this));
+    this.worker.on('failed', this.onFailed.bind(this));
+  }
+
+  private async processJob(job: Job<ImageGenerationJob>): Promise<GenerationResult> {
+    const { promptId, promptText, type, referenceImageUrl } = job.data;
+
+    // Update status to processing
+    await this.updateJobStatus(promptId, 'processing');
+
+    try {
+      // Generate image using Vertex AI
+      const imageBuffer = await this.generateImage(promptText, type, referenceImageUrl);
+
+      // Process image (resize, optimize)
+      const processedImages = await this.processImage(imageBuffer);
+
+      // Upload to Cloudinary
+      const urls = await this.uploadImages(promptId, processedImages);
+
+      // Update prompt with image URLs
+      await this.updatePromptWithImage(promptId, urls);
+
+      return urls;
+    } catch (error) {
+      await this.updateJobStatus(promptId, 'failed', (error as Error).message);
+      throw error;
+    }
+  }
+
+  private async generateImage(
+    promptText: string,
+    type: string,
+    referenceImageUrl?: string
+  ): Promise<Buffer> {
+    const model = this.vertexAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp' // Gemini with image generation
+    });
+
+    // Prepare generation prompt
+    let generationPrompt = promptText;
+    if (type === 'image-to-image' && referenceImageUrl) {
+      // Include reference image in prompt
+      generationPrompt = `Transform this image based on: ${promptText}`;
+    }
+
+    // Generate image
+    const response = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: generationPrompt }] }],
+      generationConfig: {
+        // Imagen-specific parameters would go here
+        temperature: 0.7,
+        topP: 0.9
+      }
+    });
+
+    // For actual image generation, use Imagen API
+    // This is a simplified example
+    const imageData = response.response.candidates?.[0]?.content?.parts?.[0];
+
+    if (!imageData || typeof imageData === 'string') {
+      throw new Error('Image generation failed');
+    }
+
+    // Return image buffer
+    return Buffer.from(imageData as unknown as string, 'base64');
+  }
+
+  private async processImage(imageBuffer: Buffer): Promise<{
+    full: Buffer;
+    thumbnail: Buffer;
+    blurhash: string;
+  }> {
+    // Process full-size image
+    const full = await sharp(imageBuffer)
+      .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toBuffer();
+
+    // Generate thumbnail
+    const thumbnail = await sharp(imageBuffer)
+      .resize(400, 300, { fit: 'cover' })
+      .webp({ quality: 75 })
+      .toBuffer();
+
+    // Generate blurhash for placeholder
+    const { data, info } = await sharp(imageBuffer)
+      .resize(32, 32, { fit: 'inside' })
+      .raw()
+      .ensureAlpha()
+      .toBuffer({ resolveWithObject: true });
+
+    const blurhash = this.generateBlurhash(data, info.width, info.height);
+
+    return { full, thumbnail, blurhash };
+  }
+
+  private generateBlurhash(data: Buffer, width: number, height: number): string {
+    // Simplified blurhash generation
+    // Use actual blurhash library in production
+    return 'LEHV6nWB2yk8pyoJadR*.7kCMdnj';
+  }
+
+  private async uploadImages(
+    promptId: string,
+    images: { full: Buffer; thumbnail: Buffer; blurhash: string }
+  ): Promise<GenerationResult> {
+    const uploadToCloudinary = (buffer: Buffer, folder: string): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `prompt-gallery/${folder}`,
+            public_id: promptId,
+            resource_type: 'image',
+            format: 'webp'
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result!.secure_url);
+          }
+        );
+        uploadStream.end(buffer);
+      });
+    };
+
+    const [imageUrl, thumbnailUrl] = await Promise.all([
+      uploadToCloudinary(images.full, 'images'),
+      uploadToCloudinary(images.thumbnail, 'thumbnails')
+    ]);
+
+    return {
+      imageUrl,
+      thumbnailUrl,
+      blurhash: images.blurhash
+    };
+  }
+
+  private async updatePromptWithImage(
+    promptId: string,
+    urls: GenerationResult
+  ): Promise<void> {
+    await prisma.prompt.update({
+      where: { id: promptId },
+      data: {
+        imageUrl: urls.imageUrl,
+        thumbnailUrl: urls.thumbnailUrl,
+        blurhash: urls.blurhash,
+        status: 'published',
+        publishedAt: new Date()
+      }
+    });
+
+    await prisma.imageGenerationJob.updateMany({
+      where: { promptId },
+      data: {
+        status: 'completed',
+        completedAt: new Date()
+      }
+    });
+  }
+
+  private async updateJobStatus(
+    promptId: string,
+    status: string,
+    errorMessage?: string
+  ): Promise<void> {
+    await prisma.imageGenerationJob.updateMany({
+      where: { promptId },
+      data: {
+        status,
+        errorMessage,
+        ...(status === 'processing' && { startedAt: new Date() })
+      }
+    });
+
+    if (status === 'processing') {
+      await prisma.prompt.update({
+        where: { id: promptId },
+        data: { status: 'processing' }
+      });
+    }
+  }
+
+  private async onCompleted(job: Job<ImageGenerationJob>): Promise<void> {
+    console.log(`Job ${job.id} completed for prompt ${job.data.promptId}`);
+  }
+
+  private async onFailed(job: Job<ImageGenerationJob> | undefined, error: Error): Promise<void> {
+    if (job) {
+      console.error(`Job ${job.id} failed for prompt ${job.data.promptId}:`, error);
+
+      // Check retry attempts
+      const jobRecord = await prisma.imageGenerationJob.findFirst({
+        where: { promptId: job.data.promptId }
+      });
+
+      if (jobRecord && jobRecord.attempts >= jobRecord.maxAttempts) {
+        await prisma.prompt.update({
+          where: { id: job.data.promptId },
+          data: { status: 'rejected' }
+        });
+      }
+    }
+  }
+}
+
+// Start worker
+new ImageGenerationWorker();
+```
+
+### Error Handling & Retry Strategy
+
+| Error Type | Retry | Max Attempts | Backoff |
+|------------|-------|--------------|---------|
+| Rate limit | Yes | 5 | Exponential (1m, 2m, 4m, 8m, 16m) |
+| Timeout | Yes | 3 | Fixed (30s) |
+| Invalid prompt | No | - | - |
+| API error | Yes | 3 | Exponential |
+| Network error | Yes | 5 | Exponential |
+
+---
+
+## Security Requirements
+
+### Authentication & Authorization
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Password hashing | bcrypt with cost factor 12 |
+| Session management | HTTP-only, secure cookies |
+| JWT tokens | RS256, 15min access, 7d refresh |
+| API keys | SHA-256 hashed, prefixed |
+| OAuth | Google, GitHub providers |
+| 2FA | Optional TOTP support |
+
+### Input Validation
+
+```typescript
+// validation/prompt.ts
+import { z } from 'zod';
+
+export const createPromptSchema = z.object({
+  title: z.string()
+    .min(3, 'Title must be at least 3 characters')
+    .max(100, 'Title must be at most 100 characters')
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Title contains invalid characters'),
+
+  promptText: z.string()
+    .min(10, 'Prompt must be at least 10 characters')
+    .max(10000, 'Prompt must be at most 10,000 characters'),
+
+  type: z.enum(['text-to-image', 'text-to-video', 'image-to-image', 'image-to-video']),
+
+  tags: z.array(z.string().max(30))
+    .max(10, 'Maximum 10 tags allowed')
+    .optional(),
+
+  category: z.string().max(50).optional(),
+
+  style: z.string().max(50).optional()
+});
+```
+
+### Security Headers
+
+```typescript
+// next.config.js
+const securityHeaders = [
+  {
+    key: 'X-DNS-Prefetch-Control',
+    value: 'on'
+  },
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains; preload'
+  },
+  {
+    key: 'X-Frame-Options',
+    value: 'DENY'
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff'
+  },
+  {
+    key: 'Referrer-Policy',
+    value: 'strict-origin-when-cross-origin'
+  },
+  {
+    key: 'Content-Security-Policy',
+    value: `
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com;
+      font-src 'self';
+      connect-src 'self' https://api.promptgallery.com;
+      frame-ancestors 'none';
+    `.replace(/\n/g, '')
+  }
+];
+```
+
+### Rate Limiting Implementation
+
+```typescript
+// middleware/rate-limit.ts
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_URL!,
+  token: process.env.UPSTASH_REDIS_TOKEN!
+});
+
+export const rateLimits = {
+  anonymous: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(30, '1 m'),
+    prefix: 'ratelimit:anon'
+  }),
+
+  authenticated: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(100, '1 m'),
+    prefix: 'ratelimit:auth'
+  }),
+
+  submission: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(10, '1 h'),
+    prefix: 'ratelimit:submit'
+  })
+};
+```
+
+### Content Security
+
+| Threat | Mitigation |
+|--------|------------|
+| XSS | Input sanitization, CSP, React auto-escaping |
+| CSRF | SameSite cookies, CSRF tokens |
+| SQL Injection | Prisma ORM, parameterized queries |
+| Prompt Injection | Content filtering, moderation API |
+| NSFW Content | Vertex AI safety filters, manual review |
+
+---
+
+## Performance Requirements
+
+### Core Web Vitals Targets
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| LCP (Largest Contentful Paint) | < 2.5s | 75th percentile |
+| FID (First Input Delay) | < 100ms | 75th percentile |
+| CLS (Cumulative Layout Shift) | < 0.1 | 75th percentile |
+| TTFB (Time to First Byte) | < 200ms | 75th percentile |
+
+### API Performance Targets
+
+| Endpoint | Target Response Time |
+|----------|---------------------|
+| List prompts | < 200ms |
+| Get single prompt | < 100ms |
+| Search | < 300ms |
+| Create prompt | < 500ms |
+| Image generation | < 60s |
+
+### Optimization Strategies
+
+#### Image Optimization
+- WebP format with JPEG fallback
+- Responsive images with srcset
+- Lazy loading with Intersection Observer
+- Blurhash placeholders
+- CDN caching (1 year for images)
+
+#### Caching Strategy
+| Resource | Cache Duration | Strategy |
+|----------|----------------|----------|
+| Static assets | 1 year | Immutable |
+| API responses | 5 min | Stale-while-revalidate |
+| Search results | 1 min | Cache-first |
+| User data | No cache | Network-only |
+
+#### Code Splitting
+```typescript
+// Dynamic imports for large components
+const PromptModal = dynamic(() => import('@/components/PromptModal'), {
+  loading: () => <ModalSkeleton />
+});
+
+const FilterPanel = dynamic(() => import('@/components/FilterPanel'), {
+  ssr: false
+});
+```
+
+---
+
+## Accessibility Requirements
+
+### WCAG 2.1 Level AA Compliance
+
+| Criterion | Requirement | Implementation |
+|-----------|-------------|----------------|
+| 1.1.1 Non-text Content | Alt text for images | Auto-generated from prompt title |
+| 1.3.1 Info and Relationships | Semantic HTML | Proper heading hierarchy |
+| 1.4.3 Contrast Minimum | 4.5:1 ratio | Tested color palette |
+| 2.1.1 Keyboard | Full keyboard navigation | Focus management |
+| 2.4.3 Focus Order | Logical tab order | DOM order matches visual |
+| 2.4.7 Focus Visible | Visible focus indicator | Custom focus rings |
+| 4.1.2 Name, Role, Value | ARIA labels | All interactive elements |
+
+### Keyboard Navigation
+
+| Key | Action |
+|-----|--------|
+| Tab | Move focus forward |
+| Shift+Tab | Move focus backward |
+| Enter/Space | Activate button/link |
+| Escape | Close modal/dropdown |
+| Arrow keys | Navigate cards/options |
+| Home/End | First/last item |
+
+### Screen Reader Support
+
+```tsx
+// Accessible card component
+<article
+  aria-labelledby={`prompt-title-${prompt.id}`}
+  aria-describedby={`prompt-desc-${prompt.id}`}
+>
+  <img
+    src={prompt.thumbnailUrl}
+    alt={`Generated image for: ${prompt.title}`}
+    loading="lazy"
+  />
+  <h3 id={`prompt-title-${prompt.id}`}>{prompt.title}</h3>
+  <p id={`prompt-desc-${prompt.id}`} className="sr-only">
+    {prompt.type} prompt with {prompt.copyCount} copies
+  </p>
+  <button
+    aria-label={`Copy prompt: ${prompt.title}`}
+    onClick={handleCopy}
+  >
+    <CopyIcon aria-hidden="true" />
+  </button>
+</article>
+```
+
+---
+
+## Testing Strategy
+
+### Testing Pyramid
+
+```
+                    ┌───────────┐
+                    │   E2E     │  10%
+                    │ (Playwright)
+                    ├───────────┤
+                    │Integration│  20%
+                    │  (Vitest) │
+                    ├───────────┤
+                    │   Unit    │  70%
+                    │  (Vitest) │
+                    └───────────┘
+```
+
+### Test Coverage Targets
+
+| Area | Target Coverage |
+|------|-----------------|
+| Core business logic | 90% |
+| API endpoints | 85% |
+| UI components | 75% |
+| Utilities | 95% |
+
+### Unit Tests
+
+```typescript
+// __tests__/utils/prompt.test.ts
+import { describe, it, expect } from 'vitest';
+import { generateSlug, validatePromptText } from '@/utils/prompt';
+
+describe('generateSlug', () => {
+  it('should convert title to URL-friendly slug', () => {
+    expect(generateSlug('Cyberpunk City at Night')).toBe('cyberpunk-city-at-night');
+  });
+
+  it('should handle special characters', () => {
+    expect(generateSlug('Hello, World! @2024')).toBe('hello-world-2024');
+  });
+
+  it('should truncate long slugs', () => {
+    const longTitle = 'A'.repeat(150);
+    expect(generateSlug(longTitle).length).toBeLessThanOrEqual(100);
+  });
+});
+
+describe('validatePromptText', () => {
+  it('should accept valid prompt text', () => {
+    expect(validatePromptText('A beautiful landscape with mountains')).toBe(true);
+  });
+
+  it('should reject prompts that are too short', () => {
+    expect(validatePromptText('Hi')).toBe(false);
+  });
+
+  it('should reject prompts with prohibited content', () => {
+    expect(validatePromptText('prohibited content here')).toBe(false);
+  });
+});
+```
+
+### Integration Tests
+
+```typescript
+// __tests__/api/prompts.test.ts
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createTestServer, createTestUser } from '../helpers';
+
+describe('POST /api/prompts', () => {
+  let server: TestServer;
+  let authToken: string;
+
+  beforeAll(async () => {
+    server = await createTestServer();
+    const user = await createTestUser();
+    authToken = user.token;
+  });
+
+  afterAll(async () => {
+    await server.close();
+  });
+
+  it('should create a new prompt', async () => {
+    const response = await server.request('/api/prompts', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+      body: {
+        title: 'Test Prompt',
+        promptText: 'A beautiful landscape with mountains and rivers',
+        type: 'text-to-image',
+        tags: ['landscape', 'nature']
+      }
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.slug).toBe('test-prompt');
+    expect(response.body.data.status).toBe('pending_image');
+  });
+
+  it('should return 401 without auth', async () => {
+    const response = await server.request('/api/prompts', {
+      method: 'POST',
+      body: { title: 'Test', promptText: 'Test prompt' }
+    });
+
+    expect(response.status).toBe(401);
+  });
+});
+```
+
+### E2E Tests
+
+```typescript
+// e2e/prompt-gallery.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Prompt Gallery', () => {
+  test('should display prompts on homepage', async ({ page }) => {
+    await page.goto('/');
+
+    // Wait for prompts to load
+    await page.waitForSelector('[data-testid="prompt-card"]');
+
+    // Verify prompts are displayed
+    const cards = await page.locator('[data-testid="prompt-card"]').count();
+    expect(cards).toBeGreaterThan(0);
+  });
+
+  test('should filter prompts by type', async ({ page }) => {
+    await page.goto('/');
+
+    // Click type filter
+    await page.click('[data-testid="filter-text-to-image"]');
+
+    // Wait for filtered results
+    await page.waitForResponse(resp => resp.url().includes('type=text-to-image'));
+
+    // Verify all visible cards have correct type
+    const badges = await page.locator('[data-testid="type-badge"]').allTextContents();
+    expect(badges.every(b => b === 'Text to Image')).toBe(true);
+  });
+
+  test('should copy prompt to clipboard', async ({ page }) => {
+    await page.goto('/');
+
+    // Click copy button on first card
+    await page.click('[data-testid="copy-button"]:first-child');
+
+    // Verify toast notification appears
+    await expect(page.locator('[data-testid="toast"]')).toBeVisible();
+    await expect(page.locator('[data-testid="toast"]')).toContainText('Copied');
+  });
+
+  test('should search prompts', async ({ page }) => {
+    await page.goto('/');
+
+    // Type in search box
+    await page.fill('[data-testid="search-input"]', 'cyberpunk');
+
+    // Wait for debounced search
+    await page.waitForTimeout(400);
+
+    // Verify results contain search term
+    const titles = await page.locator('[data-testid="prompt-title"]').allTextContents();
+    expect(titles.some(t => t.toLowerCase().includes('cyberpunk'))).toBe(true);
+  });
+});
+```
+
+### Extension Tests
+
+```typescript
+// extension/__tests__/content-script.test.ts
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { handleTextSelection } from '../content/content-script';
+
+// Mock chrome API
+const mockChrome = {
+  runtime: {
+    sendMessage: vi.fn()
+  }
+};
+
+(global as any).chrome = mockChrome;
+
+describe('Content Script', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should capture selected text', () => {
+    // Mock window.getSelection
+    const mockSelection = {
+      toString: () => 'A beautiful landscape prompt'
+    };
+    vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as Selection);
+
+    handleTextSelection();
+
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'TEXT_SELECTED',
+      data: expect.objectContaining({
+        text: 'A beautiful landscape prompt'
+      })
+    });
+  });
+
+  it('should ignore short selections', () => {
+    const mockSelection = {
+      toString: () => 'Hi'
+    };
+    vi.spyOn(window, 'getSelection').mockReturnValue(mockSelection as Selection);
+
+    handleTextSelection();
+
+    expect(mockChrome.runtime.sendMessage).not.toHaveBeenCalled();
+  });
+});
+```
+
+---
+
+## Deployment & CI/CD
+
+### CI/CD Pipeline
+
+```yaml
+# .github/workflows/ci.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:ci
+      - uses: codecov/codecov-action@v3
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps
+      - run: pnpm build
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: .next/
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build, e2e]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [build, e2e]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+```
+
+### Deployment Environments
+
+| Environment | URL | Branch | Auto-deploy |
+|-------------|-----|--------|-------------|
+| Development | localhost:3000 | - | - |
+| Staging | staging.promptgallery.com | develop | Yes |
+| Production | promptgallery.com | main | Yes |
+
+### Database Migrations
+
+```bash
+# Create migration
+pnpm prisma migrate dev --name add_collections
+
+# Deploy migration to staging/production
+pnpm prisma migrate deploy
+```
+
+---
+
+## Monitoring & Logging
+
+### Monitoring Stack
+
+| Tool | Purpose |
+|------|---------|
+| Sentry | Error tracking & performance |
+| PostHog | Product analytics |
+| Vercel Analytics | Web vitals |
+| Uptime Robot | Uptime monitoring |
+| PagerDuty | Incident alerting |
+
+### Sentry Configuration
+
+```typescript
+// sentry.client.config.ts
+import * as Sentry from '@sentry/nextjs';
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: 0.1,
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+  integrations: [
+    new Sentry.BrowserTracing({
+      tracePropagationTargets: ['localhost', /^https:\/\/api\.promptgallery\.com/]
+    }),
+    new Sentry.Replay()
+  ]
+});
+```
+
+### Logging Structure
+
+```typescript
+// lib/logger.ts
+import pino from 'pino';
+
+export const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  formatters: {
+    level: (label) => ({ level: label })
+  },
+  base: {
+    env: process.env.NODE_ENV,
+    service: 'prompt-gallery'
+  }
+});
+
+// Usage
+logger.info({ promptId, userId }, 'Prompt created');
+logger.error({ error, promptId }, 'Image generation failed');
+```
+
+### Alerts Configuration
+
+| Alert | Condition | Severity | Channel |
+|-------|-----------|----------|---------|
+| High error rate | > 5% errors in 5min | Critical | PagerDuty |
+| API latency | P95 > 2s for 10min | Warning | Slack |
+| Image gen failures | > 10% failures in 1hr | Warning | Slack |
+| Database connection | Connection failures | Critical | PagerDuty |
+| Disk usage | > 80% | Warning | Email |
+
+---
+
+## Environment Setup
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm 8+
+- PostgreSQL 15+
+- Redis 7+
+- Google Cloud account (for Vertex AI)
+- Cloudinary account
+
+### Local Development Setup
+
+```bash
+# Clone repository
+git clone https://github.com/your-org/prompt-gallery.git
+cd prompt-gallery
+
+# Install dependencies
+pnpm install
+
+# Copy environment variables
+cp .env.example .env.local
+
+# Setup database
+pnpm db:setup
+
+# Start development server
+pnpm dev
+```
+
+### Environment Variables
+
+```bash
+# .env.local
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
+
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/prompt_gallery
+DIRECT_URL=postgresql://postgres:postgres@localhost:5432/prompt_gallery
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Auth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key-here
+
+# OAuth Providers
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Google Cloud / Vertex AI
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_APPLICATION_CREDENTIALS=./config/service-account.json
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Algolia Search
+NEXT_PUBLIC_ALGOLIA_APP_ID=your-app-id
+NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=your-search-key
+ALGOLIA_ADMIN_KEY=your-admin-key
+
+# Sentry
+NEXT_PUBLIC_SENTRY_DSN=your-sentry-dsn
+SENTRY_AUTH_TOKEN=your-sentry-auth-token
+
+# PostHog
+NEXT_PUBLIC_POSTHOG_KEY=your-posthog-key
+NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
+```
+
+### Project Structure
+
+```
+prompt-gallery/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # Auth routes (login, register)
+│   ├── (main)/            # Main app routes
+│   │   ├── page.tsx       # Homepage / Gallery
+│   │   ├── prompts/       # Prompt pages
+│   │   ├── users/         # User profiles
+│   │   └── collections/   # Collections
+│   ├── api/               # API routes
+│   │   ├── prompts/       # Prompt endpoints
+│   │   ├── users/         # User endpoints
+│   │   ├── auth/          # Auth endpoints
+│   │   └── webhooks/      # Webhook handlers
+│   ├── layout.tsx         # Root layout
+│   └── globals.css        # Global styles
+├── components/            # React components
+│   ├── ui/               # Base UI components (shadcn)
+│   ├── cards/            # Card components
+│   ├── forms/            # Form components
+│   ├── layout/           # Layout components
+│   └── modals/           # Modal components
+├── hooks/                # Custom React hooks
+├── lib/                  # Utilities & configurations
+│   ├── prisma.ts         # Prisma client
+│   ├── redis.ts          # Redis client
+│   ├── auth.ts           # Auth configuration
+│   └── validations/      # Zod schemas
+├── services/             # Business logic services
+│   ├── prompt.service.ts
+│   ├── user.service.ts
+│   └── image-gen.service.ts
+├── workers/              # Background workers
+│   └── image-generation/
+├── prisma/               # Database schema & migrations
+│   ├── schema.prisma
+│   └── migrations/
+├── extension/            # Browser extension
+│   ├── manifest.json
+│   ├── background/
+│   ├── content/
+│   └── popup/
+├── public/               # Static assets
+├── __tests__/            # Test files
+├── e2e/                  # E2E tests
+└── config/               # Configuration files
+```
+
+---
+
+## Implementation Phases
+
+### Phase 1: Foundation (MVP)
+**Duration: Core functionality**
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Project setup (Next.js, Tailwind, Prisma) | High | Pending |
+| Database schema implementation | High | Pending |
+| Authentication (NextAuth) | High | Pending |
+| Basic API endpoints (CRUD) | High | Pending |
+| Gallery page with card grid | High | Pending |
+| Prompt detail modal | High | Pending |
+| Copy functionality | High | Pending |
+| Basic search | Medium | Pending |
+| Type filtering | Medium | Pending |
+| Responsive design | Medium | Pending |
+
+**Deliverables:**
+- Working gallery with prompts display
+- Basic search and type filtering
+- Copy to clipboard functionality
+- User authentication
+
+### Phase 2: Enhanced Search & Filters
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Algolia integration | High | Pending |
+| Advanced filters (tags, style, category) | High | Pending |
+| Sort options | Medium | Pending |
+| Filter persistence in URL | Medium | Pending |
+| Search suggestions | Medium | Pending |
+| Infinite scroll / pagination | Medium | Pending |
+
+**Deliverables:**
+- Full-text search with Algolia
+- Multi-filter system
+- Shareable filter URLs
+
+### Phase 3: User Features
+
+| Task | Priority | Status |
+|------|----------|--------|
+| User profiles | High | Pending |
+| Like/bookmark prompts | High | Pending |
+| Collections/boards | Medium | Pending |
+| User-submitted prompts | Medium | Pending |
+| Follow users | Low | Pending |
+
+**Deliverables:**
+- User profile pages
+- Personal collections
+- Social features
+
+### Phase 4: Browser Extension
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Extension manifest & structure | High | Pending |
+| Context menu integration | High | Pending |
+| Popup UI | High | Pending |
+| API integration | High | Pending |
+| Extension authentication | Medium | Pending |
+| Keyboard shortcuts | Medium | Pending |
+| Cross-browser testing | Medium | Pending |
+
+**Deliverables:**
+- Working Chrome extension
+- Firefox/Edge compatibility
+- Store listings
+
+### Phase 5: Image Generation
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Vertex AI service account setup | High | Pending |
+| Image generation worker | High | Pending |
+| Queue system (BullMQ) | High | Pending |
+| Cloudinary integration | High | Pending |
+| Status polling endpoint | Medium | Pending |
+| Error handling & retries | Medium | Pending |
+| Image optimization pipeline | Medium | Pending |
+
+**Deliverables:**
+- Automatic image generation
+- Image storage & CDN
+- Generation status tracking
+
+### Phase 6: Polish & Scale
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Performance optimization | High | Pending |
+| SEO implementation | High | Pending |
+| Analytics integration | Medium | Pending |
+| Admin panel | Medium | Pending |
+| Content moderation | Medium | Pending |
+| Documentation | Medium | Pending |
+| Load testing | Low | Pending |
+
+**Deliverables:**
+- Optimized performance
+- Admin dashboard
+- Production-ready deployment
+
+---
+
+## Success Metrics
+
+### Product Metrics
+
+| Metric | Target (Month 1) | Target (Month 6) |
+|--------|------------------|------------------|
+| Registered users | 1,000 | 25,000 |
+| Monthly active users | 500 | 15,000 |
+| Prompts in gallery | 500 | 10,000 |
+| Daily prompt copies | 200 | 5,000 |
+| Extension installs | 100 | 5,000 |
+| User submissions | 50/day | 500/day |
+
+### Technical Metrics
+
+| Metric | Target |
+|--------|--------|
+| Uptime | 99.9% |
+| API latency (P95) | < 500ms |
+| Error rate | < 0.1% |
+| Test coverage | > 80% |
+| Lighthouse score | > 90 |
+| Image gen success rate | > 95% |
+
+### Business Metrics
+
+| Metric | Target |
+|--------|--------|
+| Organic traffic growth | 20% MoM |
+| User retention (30-day) | > 40% |
+| Prompt submission rate | 10% of active users |
+| Extension conversion | 5% of visitors |
+
+---
+
+## Appendix
+
+### A. Glossary
+
+| Term | Definition |
+|------|------------|
+| Prompt | Text description used to generate AI content |
+| Blurhash | Compact representation for image placeholders |
+| LCP | Largest Contentful Paint (Core Web Vital) |
+| FID | First Input Delay (Core Web Vital) |
+| CLS | Cumulative Layout Shift (Core Web Vital) |
+
+### B. Reference Links
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Tailwind CSS](https://tailwindcss.com)
+- [Prisma ORM](https://www.prisma.io/docs)
+- [Vertex AI](https://cloud.google.com/vertex-ai)
+- [Chrome Extension API](https://developer.chrome.com/docs/extensions)
+- [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+
+### C. Design Resources
+
+- [Figma Design System](#) (to be created)
+- [Icon Library: Lucide](https://lucide.dev)
+- [UI Components: shadcn/ui](https://ui.shadcn.com)
+
+### D. API Rate Limit Headers
+
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1640995200
+```
+
+### E. Webhook Events
+
+| Event | Payload |
+|-------|---------|
+| `prompt.created` | `{ promptId, userId, type }` |
+| `prompt.published` | `{ promptId, imageUrl }` |
+| `image.generated` | `{ promptId, imageUrl, status }` |
+| `image.failed` | `{ promptId, error }` |
+
+---
+
+**Document Version History**
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | Jan 2025 | - | Initial draft |
+| 2.0 | Jan 2025 | AI Assistant | Comprehensive rewrite with advanced features |

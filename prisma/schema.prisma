@@ -1,0 +1,242 @@
+// Prisma Schema for Prompt Gallery
+// Using SQLite for development (cost-free), easy to switch to PostgreSQL for production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  username      String?   @unique
+  bio           String?
+  role          String    @default("user") // user, creator, moderator, admin
+
+  // Stats
+  promptCount   Int       @default(0)
+  totalCopies   Int       @default(0)
+  totalLikes    Int       @default(0)
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  prompts       Prompt[]
+  likes         Like[]
+  collections   Collection[]
+  apiKeys       ApiKey[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// Main Prompt model
+model Prompt {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  promptText  String
+  type        String   // text-to-image, text-to-video, image-to-image, image-to-video
+  status      String   @default("published") // draft, pending_review, pending_image, processing, published, rejected, archived
+
+  // Media
+  imageUrl      String?
+  thumbnailUrl  String?
+  videoUrl      String?
+  blurhash      String?
+
+  // Categorization (stored as JSON string for SQLite compatibility)
+  tags        String   @default("[]") // JSON array as string
+  category    String?
+  style       String?
+
+  // Source (for extension imports)
+  sourceUrl   String?  // Original URL where prompt was found
+  sourceType  String?  // reddit, twitter, selection, other
+
+  // Author
+  authorId    String?
+  author      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  // Metadata (stored as JSON string)
+  metadata    String   @default("{}") // JSON object as string
+
+  // Stats
+  viewCount   Int      @default(0)
+  copyCount   Int      @default(0)
+  likeCount   Int      @default(0)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+
+  // Relations
+  likes       Like[]
+  collectionPrompts CollectionPrompt[]
+
+  @@index([type])
+  @@index([status])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+// Like model for user interactions
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  promptId  String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, promptId], name: "uniqueLike")
+}
+
+// Collection model for organizing prompts
+model Collection {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  coverImageUrl String?
+  isPublic      Boolean  @default(true)
+  ownerId       String
+  promptCount   Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  prompts       CollectionPrompt[]
+}
+
+// Junction table for Collection <-> Prompt many-to-many
+model CollectionPrompt {
+  collectionId  String
+  promptId      String
+  addedAt       DateTime @default(now())
+  displayOrder  Int      @default(0)
+
+  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  prompt        Prompt     @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, promptId])
+}
+
+// API Key for extension authentication
+model ApiKey {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  keyHash     String
+  keyPrefix   String
+  scopes      String    @default("[]") // JSON array
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Tag model for better filtering
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  category    String?
+  promptCount Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// Category model
+model Category {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  slug         String    @unique
+  description  String?
+  icon         String?
+  parentId     String?
+  promptCount  Int       @default(0)
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+}
+
+// Contact message model
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    String   @default("new") // new, read, replied, archived
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Report model for reporting prompts
+model Report {
+  id        String   @id @default(cuid())
+  promptId  String
+  userId    String?  // Optional - can report without being logged in
+  reason    String   // spam, inappropriate, copyright, other
+  details   String?
+  status    String   @default("pending") // pending, reviewed, resolved, dismissed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([promptId])
+  @@index([status])
+}

@@ -1,0 +1,281 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { parseJSON } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth";
+
+// GET /api/prompts/[id] - Get single prompt
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Try to find by ID or slug
+    const prompt = await prisma.prompt.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            image: true,
+            bio: true,
+            promptCount: true,
+          },
+        },
+      },
+    });
+
+    if (!prompt) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: "Prompt not found",
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    // Increment view count
+    await prisma.prompt.update({
+      where: { id: prompt.id },
+      data: { viewCount: { increment: 1 } },
+    });
+
+    // Get related prompts (same type, similar tags)
+    const promptTags = parseJSON<string[]>(prompt.tags, []);
+    const relatedPrompts = await prisma.prompt.findMany({
+      where: {
+        id: { not: prompt.id },
+        status: "published",
+        type: prompt.type,
+      },
+      take: 6,
+      orderBy: { copyCount: "desc" },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        thumbnailUrl: true,
+        type: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: prompt.id,
+        title: prompt.title,
+        slug: prompt.slug,
+        promptText: prompt.promptText,
+        type: prompt.type,
+        status: prompt.status,
+        imageUrl: prompt.imageUrl,
+        thumbnailUrl: prompt.thumbnailUrl,
+        videoUrl: prompt.videoUrl,
+        blurhash: prompt.blurhash,
+        tags: promptTags,
+        category: prompt.category,
+        style: prompt.style,
+        author: prompt.author,
+        metadata: parseJSON(prompt.metadata, {}),
+        viewCount: prompt.viewCount + 1,
+        copyCount: prompt.copyCount,
+        likeCount: prompt.likeCount,
+        createdAt: prompt.createdAt.toISOString(),
+        updatedAt: prompt.updatedAt.toISOString(),
+        publishedAt: prompt.publishedAt?.toISOString() || null,
+        relatedPrompts,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching prompt:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Failed to fetch prompt",
+        },
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/prompts/[id] - Update prompt
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Check authentication
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "You must be logged in to update prompts",
+          },
+        },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+
+    const { title, promptText, tags, category, style, metadata } = body;
+
+    const prompt = await prisma.prompt.findUnique({ where: { id } });
+
+    if (!prompt) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: "Prompt not found",
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    // Check if user is the author
+    if (prompt.authorId !== user.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "You can only edit your own prompts",
+          },
+        },
+        { status: 403 }
+      );
+    }
+
+    const updatedPrompt = await prisma.prompt.update({
+      where: { id },
+      data: {
+        ...(title && { title }),
+        ...(promptText && { promptText }),
+        ...(tags && { tags: JSON.stringify(tags) }),
+        ...(category !== undefined && { category }),
+        ...(style !== undefined && { style }),
+        ...(metadata && { metadata: JSON.stringify(metadata) }),
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: updatedPrompt.id,
+        slug: updatedPrompt.slug,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating prompt:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Failed to update prompt",
+        },
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/prompts/[id] - Delete prompt
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Check authentication
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "You must be logged in to delete prompts",
+          },
+        },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+
+    const prompt = await prisma.prompt.findUnique({ where: { id } });
+
+    if (!prompt) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: "Prompt not found",
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    // Check if user is the author
+    if (prompt.authorId !== user.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "You can only delete your own prompts",
+          },
+        },
+        { status: 403 }
+      );
+    }
+
+    // Decrement author's prompt count
+    if (prompt.authorId) {
+      await prisma.user.update({
+        where: { id: prompt.authorId },
+        data: { promptCount: { decrement: 1 } },
+      });
+    }
+
+    await prisma.prompt.delete({ where: { id } });
+
+    return NextResponse.json({
+      success: true,
+      data: { id },
+    });
+  } catch (error) {
+    console.error("Error deleting prompt:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Failed to delete prompt",
+        },
+      },
+      { status: 500 }
+    );
+  }
+}
