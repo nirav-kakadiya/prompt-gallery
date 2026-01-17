@@ -59,12 +59,13 @@ function getClient(): GoogleGenAI {
 }
 
 /**
- * Generate a title for a prompt using Gemini 1.5 Flash (lowest cost text model)
+ * Generate a title and tags for a prompt using Gemini (lowest cost text model)
  * This is optimized for cost efficiency while maintaining quality
  */
 export async function generatePromptTitle(promptText: string): Promise<{
   success: boolean;
   title?: string;
+  tags?: string[];
   error?: string;
 }> {
   try {
@@ -86,22 +87,41 @@ export async function generatePromptTitle(promptText: string): Promise<{
       ? promptText.substring(0, 2000) + "..."
       : promptText;
 
-    const prompt = `Create a very short and simple title for this AI art prompt. 
+    const prompt = `Analyze this AI art prompt and generate:
+1. A very short and simple title
+2. Relevant tags in a structured format
 
-Requirements:
+SYSTEM INSTRUCTIONS:
+- Understand the prompt content, style, subject, and artistic elements
+- Generate appropriate tags based on the prompt's content, style, subject matter, and artistic characteristics
+- Tags should be relevant, descriptive, and help categorize the prompt
+
+TITLE REQUIREMENTS:
 - Maximum 6 words (preferably 3-5 words)
 - Simple and direct
 - Focus on the main subject only
 - No extra words or descriptions
 - Just the essential concept
 
-Example good titles:
-- "Futuristic Cityscape"
-- "Portrait Photography"
-- "Abstract Art"
-- "Nature Landscape"
+TAGS REQUIREMENTS:
+- Generate 3-8 relevant tags based on the prompt content
+- Tags should cover: subject matter, style, artistic elements, mood, technique
+- Use lowercase, single words or short phrases (max 2 words per tag)
+- Avoid generic tags like "ai", "art", "prompt"
+- Focus on specific, descriptive tags that help categorize the prompt
+- Examples: "portrait", "photorealistic", "cinematic", "nature", "fantasy", "anime", "cyberpunk", "vibrant", "minimalist"
 
-Return ONLY the title, nothing else. No quotes, no explanations.
+OUTPUT FORMAT (JSON only, no other text):
+{
+  "title": "Short Title Here",
+  "tags": ["tag1", "tag2", "tag3"]
+}
+
+Example output:
+{
+  "title": "Futuristic Cityscape",
+  "tags": ["futuristic", "cityscape", "cyberpunk", "neon", "night", "urban"]
+}
 
 AI art prompt:
 ${truncatedPrompt}`;
@@ -116,8 +136,8 @@ ${truncatedPrompt}`;
           model: MODEL_NAME,
           contents: prompt,
           config: {
-            maxOutputTokens: 20, // Very short output - just a few words
-            temperature: 0.5, // Lower temperature for more focused, simple titles
+            maxOutputTokens: 150, // Increased for JSON with title and tags
+            temperature: 0.5, // Lower temperature for more focused output
           },
         });
 
@@ -128,26 +148,74 @@ ${truncatedPrompt}`;
             for (const part of candidate.content.parts) {
               const partData = part as { text?: string };
               if (partData.text) {
-                let title = partData.text.trim();
-                // Clean up title (remove quotes, extra whitespace, "Title:" prefixes, etc.)
-                title = title
+                let responseText = partData.text.trim();
+                
+                // Try to parse as JSON first
+                try {
+                  // Extract JSON from response (handle markdown code blocks)
+                  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                  if (jsonMatch) {
+                    const parsed = JSON.parse(jsonMatch[0]);
+                    
+                    // Clean and validate title
+                    let title = (parsed.title || '').trim();
+                    title = title
+                      .replace(/^["']|["']$/g, '') // Remove surrounding quotes
+                      .replace(/^[-•]\s*/, '') // Remove leading dashes/bullets
+                      .replace(/\s+/g, ' ') // Normalize whitespace
+                      .trim();
+                    
+                    // Ensure title is short (max 8 words)
+                    const words = title.split(/\s+/);
+                    const cleanTitle = words.length > 8 
+                      ? words.slice(0, 8).join(' ')
+                      : title;
+                    
+                    // Clean and validate tags
+                    let tags: string[] = [];
+                    if (Array.isArray(parsed.tags)) {
+                      tags = parsed.tags
+                        .map((tag: any) => String(tag).toLowerCase().trim())
+                        .filter((tag: string) => tag.length > 0 && tag.length <= 30) // Max 30 chars per tag
+                        .slice(0, 8); // Max 8 tags
+                    }
+                    
+                    if (cleanTitle) {
+                      console.log(`[GenAI] Title and tags generated successfully with ${MODEL_NAME}:`, { title: cleanTitle, tags });
+                      return {
+                        success: true,
+                        title: cleanTitle,
+                        tags: tags.length > 0 ? tags : undefined,
+                      };
+                    }
+                  }
+                } catch (jsonError) {
+                  // If JSON parsing fails, try to extract title from plain text
+                  console.warn(`[GenAI] Failed to parse JSON, trying plain text extraction:`, jsonError);
+                }
+                
+                // Fallback: Extract title from plain text response
+                let title = responseText
                   .replace(/^(Title|title|TITLE):\s*/i, '') // Remove "Title:" prefix
                   .replace(/^["']|["']$/g, '') // Remove surrounding quotes
                   .replace(/^[-•]\s*/, '') // Remove leading dashes/bullets
+                  .split('\n')[0] // Get first line only
                   .replace(/\s+/g, ' ') // Normalize whitespace
                   .trim();
                 
-                // Ensure title is short (max 8 words, prefer first 6)
+                // Ensure title is short (max 8 words)
                 const words = title.split(/\s+/);
                 const cleanTitle = words.length > 8 
                   ? words.slice(0, 8).join(' ')
                   : title;
                 
-                console.log(`[GenAI] Title generated successfully with ${MODEL_NAME}:`, cleanTitle);
-                return {
-                  success: true,
-                  title: cleanTitle,
-                };
+                if (cleanTitle) {
+                  console.log(`[GenAI] Title generated successfully with ${MODEL_NAME} (plain text fallback):`, cleanTitle);
+                  return {
+                    success: true,
+                    title: cleanTitle,
+                  };
+                }
               }
             }
           }

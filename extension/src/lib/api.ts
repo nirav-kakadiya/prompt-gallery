@@ -83,10 +83,10 @@ export async function uploadExternalImage(
   });
 }
 
-// Generate title for a prompt using LLM
+// Generate title and tags for a prompt using LLM
 export async function generateTitle(
   promptText: string
-): Promise<ApiResponse<{ title: string }>> {
+): Promise<ApiResponse<{ title: string; tags?: string[] }>> {
   return apiRequest('/api/extension/generate-title', {
     method: 'POST',
     body: JSON.stringify({ promptText }),

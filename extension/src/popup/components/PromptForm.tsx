@@ -39,7 +39,9 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       setType('image-to-image'); // Default to image-to-image for all other cases
     }
     
-    setTags(parsed.tags);
+    // Store parsed tags for later merging with LLM-generated tags
+    const initialTags = parsed.tags || [];
+    setTags(initialTags);
 
     // Set temporary title from first few words (fallback)
     const words = finalPromptText.split(' ').slice(0, 6);
@@ -51,18 +53,34 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       setSelectedImage(pendingPrompt.imageUrls[0]);
     }
 
-    // Generate title using LLM in background (non-blocking)
+    // Generate title and tags using LLM in background (non-blocking)
     // Start generation immediately but don't block UI rendering
     if (finalPromptText && finalPromptText.length >= 10) {
       // Use requestAnimationFrame to ensure UI renders first, then start generation
       requestAnimationFrame(() => {
         setIsGeneratingTitle(true);
         
-        // Generate title asynchronously without blocking
+        // Generate title and tags asynchronously without blocking
         generateTitle(finalPromptText)
           .then((result) => {
-            if (result.success && result.data?.title) {
-              setTitle(result.data.title);
+            if (result.success && result.data) {
+              // Set generated title
+              if (result.data.title) {
+                setTitle(result.data.title);
+              }
+              
+              // Set generated tags (merge with existing parsed tags, avoiding duplicates)
+              if (result.data?.tags && result.data.tags.length > 0) {
+                // Get current tags state and merge with new ones
+                setTags((currentTags) => {
+                  const existingTags = currentTags.length > 0 ? currentTags : initialTags;
+                  const newTags = result.data!.tags!.filter(
+                    (tag) => !existingTags.some((existing) => existing.toLowerCase() === tag.toLowerCase())
+                  );
+                  // Merge: existing tags first, then new generated tags
+                  return [...existingTags, ...newTags];
+                });
+              }
             } else {
               // If generation fails, keep the temporary title (silently)
               console.warn('Title generation failed, using temporary title:', result.error);

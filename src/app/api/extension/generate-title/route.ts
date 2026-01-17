@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate title using Gemini (lowest cost model)
+    // Generate title and tags using Gemini (lowest cost model)
     const result = await generatePromptTitle(promptText.trim());
 
     if (result.success && result.title) {
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
           success: true,
           data: {
             title: result.title,
+            tags: result.tags || [], // Include tags if generated
           },
         },
         { headers: corsHeaders }
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
         success: true, // Return success so extension doesn't show error
         data: {
           title: "", // Empty title - extension will use temporary title
+          tags: [], // Empty tags array
         },
       },
       { headers: corsHeaders }
