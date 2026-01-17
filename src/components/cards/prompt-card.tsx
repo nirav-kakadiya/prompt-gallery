@@ -82,18 +82,46 @@ export function PromptCard({
     setImageLoaded(false);
   }, [prompt.id, prompt.thumbnailUrl, prompt.imageUrl]);
 
-  const typeConfig = PROMPT_TYPES[prompt.type];
+  // Get type config with fallback to default
+  const typeConfig = PROMPT_TYPES[prompt.type] || PROMPT_TYPES["text-to-image"];
 
   // Use thumbnailUrl with fallback to imageUrl
   const displayImageUrl = prompt.thumbnailUrl || prompt.imageUrl || null;
 
-  // Handle tags that might be a string (JSON) or array
+  // Handle tags that might be a string (JSON), array of strings, or array of tag objects
   const tags: string[] = React.useMemo(() => {
-    if (Array.isArray(prompt.tags)) return prompt.tags;
+    if (Array.isArray(prompt.tags)) {
+      // Handle both string tags and tag objects {id, name, slug}
+      return prompt.tags.map((tag) => {
+        if (typeof tag === 'string') {
+          return tag;
+        }
+        if (typeof tag === 'object' && tag !== null) {
+          // Extract name from tag object
+          return (tag as { name?: string; id?: string; slug?: string }).name || 
+                 (tag as { id?: string }).id || 
+                 String(tag);
+        }
+        return String(tag);
+      });
+    }
     if (typeof prompt.tags === 'string') {
       try {
         const parsed = JSON.parse(prompt.tags || '[]');
-        return Array.isArray(parsed) ? parsed : [];
+        if (Array.isArray(parsed)) {
+          return parsed.map((tag) => {
+            if (typeof tag === 'string') {
+              return tag;
+            }
+            if (typeof tag === 'object' && tag !== null) {
+              return (tag as { name?: string; id?: string }).name || 
+                     (tag as { id?: string }).id || 
+                     String(tag);
+            }
+            return String(tag);
+          });
+        }
+        return [];
       } catch {
         return [];
       }
@@ -244,10 +272,10 @@ export function PromptCard({
                   {!imageLoaded && (
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 animate-pulse">
                       <div className="text-4xl opacity-30">
-                        {typeConfig.icon === "Image" && "🖼️"}
-                        {typeConfig.icon === "Video" && "🎬"}
-                        {typeConfig.icon === "RefreshCw" && "🔄"}
-                        {typeConfig.icon === "Play" && "▶️"}
+                        {typeConfig?.icon === "Image" && "🖼️"}
+                        {typeConfig?.icon === "Video" && "🎬"}
+                        {typeConfig?.icon === "RefreshCw" && "🔄"}
+                        {typeConfig?.icon === "Play" && "▶️"}
                       </div>
                     </div>
                   )}
@@ -295,10 +323,10 @@ export function PromptCard({
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900">
                   <div className="text-4xl opacity-30">
-                    {typeConfig.icon === "Image" && "🖼️"}
-                    {typeConfig.icon === "Video" && "🎬"}
-                    {typeConfig.icon === "RefreshCw" && "🔄"}
-                    {typeConfig.icon === "Play" && "▶️"}
+                    {typeConfig?.icon === "Image" && "🖼️"}
+                    {typeConfig?.icon === "Video" && "🎬"}
+                    {typeConfig?.icon === "RefreshCw" && "🔄"}
+                    {typeConfig?.icon === "Play" && "▶️"}
                   </div>
                 </div>
               )}
@@ -318,7 +346,7 @@ export function PromptCard({
                   variant={prompt.type as PromptType}
                   className="backdrop-blur-md bg-white/90 dark:bg-neutral-900/90 shadow-sm"
                 >
-                  {typeConfig.label}
+                  {typeConfig?.label || "Prompt"}
                 </Badge>
               </div>
 
@@ -465,9 +493,9 @@ export function PromptCard({
               {/* Tags */}
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {tags.slice(0, 3).map((tag) => (
+                  {tags.slice(0, 3).map((tag, index) => (
                     <Badge
-                      key={tag}
+                      key={`${tag}-${index}`}
                       variant="secondary"
                       size="sm"
                       className="cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"

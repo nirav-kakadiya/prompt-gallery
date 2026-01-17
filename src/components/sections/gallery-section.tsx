@@ -6,19 +6,28 @@ import { Filter, LayoutGrid, List, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PromptCard, PromptCardSkeleton } from "@/components/cards/prompt-card";
 import { FiltersSidebar } from "@/components/layout/filters-sidebar";
-import { usePrompts } from "@/hooks/use-prompts";
+import { useInfinitePrompts } from "@/hooks/use-prompts";
 import { useFilterStore, useUIStore } from "@/store";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 export function GallerySection() {
-  const { data, isLoading, error } = usePrompts();
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfinitePrompts();
   const { query, types, tags, clearFilters } = useFilterStore();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
 
   const hasActiveFilters = query || types.length > 0 || tags.length > 0;
 
-  const prompts = data?.data || [];
+  // Flatten all pages into a single array of prompts
+  const prompts = data?.pages.flatMap((page) => page.data) || [];
 
   return (
     <section className="py-8 lg:py-12" id="gallery">
@@ -196,11 +205,23 @@ export function GallerySection() {
             )}
 
             {/* Load more */}
-            {!isLoading && !error && prompts.length > 0 && data?.pagination && (
+            {!isLoading && !error && prompts.length > 0 && (
               <div className="mt-12 text-center">
-                {data.pagination.page < data.pagination.totalPages ? (
-                  <Button variant="outline" size="lg">
-                    Load more prompts
+                {hasNextPage ? (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Load more prompts"
+                    )}
                   </Button>
                 ) : (
                   <p className="text-muted-foreground">
