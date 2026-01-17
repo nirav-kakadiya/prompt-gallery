@@ -299,6 +299,28 @@ async function main() {
   await prisma.account.deleteMany();
   await prisma.user.deleteMany();
 
+  // Create test users
+  console.log("👤 Creating test users...");
+  const testUser = await prisma.user.create({
+    data: {
+      email: "demo@promptgallery.com",
+      name: "Demo User",
+      username: "demo",
+      bio: "A demo user for testing the Prompt Gallery",
+      role: "user",
+    },
+  });
+
+  const creatorUser = await prisma.user.create({
+    data: {
+      email: "creator@promptgallery.com",
+      name: "AI Art Creator",
+      username: "aicreator",
+      bio: "Professional AI art prompt creator",
+      role: "creator",
+    },
+  });
+
   // Create tags
   console.log("🏷️  Creating tags...");
   for (const tag of sampleTags) {
@@ -311,11 +333,53 @@ async function main() {
     await prisma.category.create({ data: category });
   }
 
-  // Create prompts
+  // Create prompts with all fields
   console.log("✨ Creating prompts...");
-  for (const prompt of samplePrompts) {
+  const createdPrompts = [];
+  for (let i = 0; i < samplePrompts.length; i++) {
+    const prompt = samplePrompts[i];
     const slug = generateSlug(prompt.title);
-    await prisma.prompt.create({
+    
+    // Assign author - alternate between users
+    const authorId = i % 2 === 0 ? testUser.id : creatorUser.id;
+    
+    // Create metadata based on prompt type
+    const metadata: any = {
+      model: prompt.type.includes("video") ? "Runway Gen-2" : "Midjourney v6",
+      modelVersion: prompt.type.includes("video") ? "2.0" : "6.0",
+      submissionSource: i < 3 ? "extension" : i < 6 ? "web" : "api",
+    };
+    
+    // Add parameters for some prompts
+    if (i % 3 === 0) {
+      metadata.parameters = {
+        steps: 50,
+        cfgScale: 7.5,
+        seed: Math.floor(Math.random() * 1000000),
+        sampler: "DPM++ 2M Karras",
+        width: 1024,
+        height: 1024,
+      };
+    }
+    
+    // Add negative prompt for some
+    if (i % 4 === 0) {
+      metadata.negativePrompt = "blurry, low quality, distorted, ugly, bad anatomy";
+    }
+    
+    // Set sourceUrl and sourceType for extension-sourced prompts
+    const sourceUrl = i < 3 ? `https://twitter.com/user/status/${1234567890 + i}` : null;
+    const sourceType = i < 3 ? "twitter" : i < 6 ? "reddit" : null;
+    
+    // Set imageUrl (use thumbnailUrl as fallback)
+    const imageUrl = prompt.thumbnailUrl;
+    
+    // Set videoUrl for video types
+    const videoUrl = prompt.type.includes("video") 
+      ? `https://example.com/videos/${slug}.mp4` 
+      : null;
+    
+    const createdPrompt = await prisma.prompt.create({
       data: {
         title: prompt.title,
         slug,
@@ -325,6 +389,13 @@ async function main() {
         category: prompt.category,
         style: prompt.style,
         thumbnailUrl: prompt.thumbnailUrl,
+        imageUrl: imageUrl,
+        videoUrl: videoUrl,
+        blurhash: null, // Can be added later if needed
+        sourceUrl: sourceUrl,
+        sourceType: sourceType,
+        authorId: authorId,
+        metadata: JSON.stringify(metadata),
         status: "published",
         publishedAt: new Date(),
         copyCount: prompt.copyCount,
@@ -332,12 +403,62 @@ async function main() {
         viewCount: prompt.viewCount,
       },
     });
+    
+    createdPrompts.push(createdPrompt);
+  }
+
+  // Update user prompt counts
+  console.log("📊 Updating user stats...");
+  await prisma.user.update({
+    where: { id: testUser.id },
+    data: { promptCount: Math.ceil(samplePrompts.length / 2) },
+  });
+  await prisma.user.update({
+    where: { id: creatorUser.id },
+    data: { promptCount: Math.floor(samplePrompts.length / 2) },
+  });
+
+  // Create some likes
+  console.log("❤️  Creating likes...");
+  for (let i = 0; i < Math.min(10, createdPrompts.length); i++) {
+    await prisma.like.create({
+      data: {
+        userId: i % 2 === 0 ? testUser.id : creatorUser.id,
+        promptId: createdPrompts[i].id,
+      },
+    });
+  }
+
+  // Create a sample collection
+  console.log("📚 Creating collections...");
+  const collection = await prisma.collection.create({
+    data: {
+      name: "My Favorite Prompts",
+      description: "A collection of my favorite AI art prompts",
+      isPublic: true,
+      ownerId: testUser.id,
+      promptCount: 5,
+    },
+  });
+
+  // Add some prompts to collection
+  for (let i = 0; i < 5; i++) {
+    await prisma.collectionPrompt.create({
+      data: {
+        collectionId: collection.id,
+        promptId: createdPrompts[i].id,
+        displayOrder: i,
+      },
+    });
   }
 
   console.log("\n✅ Database seeded successfully!");
+  console.log(`   - 2 users created`);
   console.log(`   - ${sampleTags.length} tags created`);
   console.log(`   - ${sampleCategories.length} categories created`);
   console.log(`   - ${samplePrompts.length} prompts created`);
+  console.log(`   - 10 likes created`);
+  console.log(`   - 1 collection created with 5 prompts`);
 }
 
 main()

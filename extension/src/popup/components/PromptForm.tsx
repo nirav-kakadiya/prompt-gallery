@@ -22,6 +22,7 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [hasImageOnly, setHasImageOnly] = useState(false); // Track if we only have image (no text)
 
   useEffect(() => {
     // Parse the pending prompt
@@ -30,6 +31,11 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
     // Set initial values IMMEDIATELY (don't wait for title generation)
     const finalPromptText = parsed.cleanText || pendingPrompt.text;
     setPromptText(finalPromptText);
+    
+    // Check if we have image but no text (image-only scenario)
+    const hasImage = !!(pendingPrompt.imageUrls && pendingPrompt.imageUrls.length > 0);
+    const hasNoText = !finalPromptText || finalPromptText.trim().length === 0;
+    setHasImageOnly(hasImage && hasNoText);
     
     // Default to image-to-image (user's primary workflow)
     // Only use parsed type if it's a video type, otherwise always use image-to-image
@@ -43,19 +49,23 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
     const initialTags = parsed.tags || [];
     setTags(initialTags);
 
-    // Set temporary title from first few words (fallback)
-    const words = finalPromptText.split(' ').slice(0, 6);
-    const tempTitle = words.join(' ') + (words.length >= 6 ? '...' : '');
-    setTitle(tempTitle);
+    // Set temporary title from first few words (fallback) or empty if no text
+    if (finalPromptText && finalPromptText.trim().length > 0) {
+      const words = finalPromptText.split(' ').slice(0, 6);
+      const tempTitle = words.join(' ') + (words.length >= 6 ? '...' : '');
+      setTitle(tempTitle);
+    } else {
+      setTitle(''); // Empty title when no text
+    }
 
     // Set first image if available
     if (pendingPrompt.imageUrls && pendingPrompt.imageUrls.length > 0) {
       setSelectedImage(pendingPrompt.imageUrls[0]);
     }
 
-    // Generate title and tags using LLM in background (non-blocking)
-    // Start generation immediately but don't block UI rendering
-    if (finalPromptText && finalPromptText.length >= 10) {
+    // Auto-generate title and tags ONLY if we have text (not image-only)
+    // For image-only, user will manually trigger generation after entering prompt
+    if (finalPromptText && finalPromptText.length >= 10 && !hasImageOnly) {
       // Use requestAnimationFrame to ensure UI renders first, then start generation
       requestAnimationFrame(() => {
         setIsGeneratingTitle(true);
@@ -96,6 +106,45 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       });
     }
   }, [pendingPrompt]);
+
+  const handleGenerateTitleAndTags = async () => {
+    const textToGenerate = promptText.trim();
+    if (!textToGenerate || textToGenerate.length < 10) {
+      setError('Please enter at least 10 characters in the prompt field');
+      return;
+    }
+
+    setIsGeneratingTitle(true);
+    setError('');
+
+    try {
+      const result = await generateTitle(textToGenerate);
+      
+      if (result.success && result.data) {
+        // Set generated title
+        if (result.data.title) {
+          setTitle(result.data.title);
+        }
+        
+        // Set generated tags (merge with existing tags, avoiding duplicates)
+        if (result.data?.tags && result.data.tags.length > 0) {
+          setTags((currentTags) => {
+            const newTags = result.data!.tags!.filter(
+              (tag) => !currentTags.some((existing) => existing.toLowerCase() === tag.toLowerCase())
+            );
+            return [...currentTags, ...newTags];
+          });
+        }
+      } else {
+        setError('Failed to generate title and tags. Please try again.');
+      }
+    } catch (err) {
+      console.error('Failed to generate title and tags:', err);
+      setError('Failed to generate title and tags. Please try again.');
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,11 +257,40 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
         <textarea
           value={promptText}
           onChange={(e) => setPromptText(e.target.value)}
-          placeholder="Enter your prompt"
+          placeholder={hasImageOnly ? "Enter a prompt describing this image..." : "Enter your prompt"}
           rows={4}
           required
           className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
         />
+        {/* Generate button - only show for image-only scenarios (manual entry), not for posts that already auto-generate */}
+        {hasImageOnly && promptText.trim().length >= 10 && !isGeneratingTitle && (
+          <button
+            type="button"
+            onClick={handleGenerateTitleAndTags}
+            className="mt-2 w-full py-2 px-3 rounded-lg border border-primary/20 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"
+              />
+            </svg>
+            Generate Title & Tags
+          </button>
+        )}
+        {/* Hint for image-only case */}
+        {hasImageOnly && promptText.trim().length < 10 && (
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            💡 Enter at least 10 characters to enable AI title & tags generation
+          </p>
+        )}
       </div>
 
       {/* Type Selector */}
