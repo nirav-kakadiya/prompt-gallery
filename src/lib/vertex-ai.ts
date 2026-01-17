@@ -58,6 +58,183 @@ function getClient(): GoogleGenAI {
   return client;
 }
 
+/**
+ * Generate a title for a prompt using Gemini 1.5 Flash (lowest cost text model)
+ * This is optimized for cost efficiency while maintaining quality
+ */
+export async function generatePromptTitle(promptText: string): Promise<{
+  success: boolean;
+  title?: string;
+  error?: string;
+}> {
+  try {
+    const ai = getClient();
+    
+    // Use Gemini 2.5 models - these are the current stable models
+    // Since gemini-2.5-flash-image works, text models should also work
+    // Try in order: flash-lite (lowest cost) -> flash -> pro
+    const modelNames = [
+      process.env.TITLE_GEN_MODEL, // User-defined model (highest priority)
+      "gemini-2.5-flash-lite",     // Lowest cost text model (fastest, cheapest)
+      "gemini-2.5-flash",          // Balanced cost/performance
+      "gemini-2.5-pro",            // Higher quality (more expensive)
+      "gemini-2.0-flash-001",      // Older version fallback
+    ].filter(Boolean) as string[];
+    
+    // Truncate prompt if too long to save costs (keep first 2000 chars)
+    const truncatedPrompt = promptText.length > 2000 
+      ? promptText.substring(0, 2000) + "..."
+      : promptText;
+
+    const prompt = `Create a very short and simple title for this AI art prompt. 
+
+Requirements:
+- Maximum 6 words (preferably 3-5 words)
+- Simple and direct
+- Focus on the main subject only
+- No extra words or descriptions
+- Just the essential concept
+
+Example good titles:
+- "Futuristic Cityscape"
+- "Portrait Photography"
+- "Abstract Art"
+- "Nature Landscape"
+
+Return ONLY the title, nothing else. No quotes, no explanations.
+
+AI art prompt:
+${truncatedPrompt}`;
+
+    // Try each model name until one works
+    let lastError: Error | null = null;
+    for (const MODEL_NAME of modelNames) {
+      try {
+        console.log(`[GenAI] Trying to generate title with model: ${MODEL_NAME}`);
+
+        const response = await ai.models.generateContent({
+          model: MODEL_NAME,
+          contents: prompt,
+          config: {
+            maxOutputTokens: 20, // Very short output - just a few words
+            temperature: 0.5, // Lower temperature for more focused, simple titles
+          },
+        });
+
+        // Extract text from response
+        if (response.candidates && response.candidates.length > 0) {
+          const candidate = response.candidates[0];
+          if (candidate.content?.parts) {
+            for (const part of candidate.content.parts) {
+              const partData = part as { text?: string };
+              if (partData.text) {
+                let title = partData.text.trim();
+                // Clean up title (remove quotes, extra whitespace, "Title:" prefixes, etc.)
+                title = title
+                  .replace(/^(Title|title|TITLE):\s*/i, '') // Remove "Title:" prefix
+                  .replace(/^["']|["']$/g, '') // Remove surrounding quotes
+                  .replace(/^[-•]\s*/, '') // Remove leading dashes/bullets
+                  .replace(/\s+/g, ' ') // Normalize whitespace
+                  .trim();
+                
+                // Ensure title is short (max 8 words, prefer first 6)
+                const words = title.split(/\s+/);
+                const cleanTitle = words.length > 8 
+                  ? words.slice(0, 8).join(' ')
+                  : title;
+                
+                console.log(`[GenAI] Title generated successfully with ${MODEL_NAME}:`, cleanTitle);
+                return {
+                  success: true,
+                  title: cleanTitle,
+                };
+              }
+            }
+          }
+        }
+
+        console.log(`[GenAI] No title in response from ${MODEL_NAME}`);
+        // Continue to next model
+        continue;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.warn(`[GenAI] Model ${MODEL_NAME} failed:`, lastError.message);
+        // Try next model
+        continue;
+      }
+    }
+
+    // All models failed - try with global location as fallback
+    console.warn("[GenAI] All regional models failed, trying global location...");
+    try {
+      // Create a new client with global location
+      const globalClient = new GoogleGenAI({
+        vertexai: true,
+        project: PROJECT_ID,
+        location: "global", // Some models require global location
+      });
+
+      // Try gemini-2.5-flash-lite with global location
+      const response = await globalClient.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: prompt,
+        config: {
+          maxOutputTokens: 20,
+          temperature: 0.5,
+        },
+      });
+
+      // Extract text from response
+      if (response.candidates && response.candidates.length > 0) {
+        const candidate = response.candidates[0];
+        if (candidate.content?.parts) {
+          for (const part of candidate.content.parts) {
+            const partData = part as { text?: string };
+            if (partData.text) {
+              let title = partData.text.trim();
+              title = title
+                .replace(/^(Title|title|TITLE):\s*/i, '')
+                .replace(/^["']|["']$/g, '')
+                .replace(/^[-•]\s*/, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+              
+              const words = title.split(/\s+/);
+              const cleanTitle = words.length > 8 
+                ? words.slice(0, 8).join(' ')
+                : title;
+              
+              console.log("[GenAI] Title generated successfully with global location:", cleanTitle);
+              return {
+                success: true,
+                title: cleanTitle,
+              };
+            }
+          }
+        }
+      }
+    } catch (globalError) {
+      console.error("[GenAI] Global location also failed:", globalError);
+    }
+
+    // All attempts failed
+    console.error("[GenAI] All model attempts failed (regional and global).");
+    console.error("[GenAI] Last error:", lastError?.message);
+    console.error("[GenAI] To fix: Enable Gemini API in Google Cloud Console or set TITLE_GEN_MODEL env variable");
+    
+    return {
+      success: false,
+      error: `No Gemini models available. Please enable Gemini API in Google Cloud Console for region ${LOCATION} or global, or set TITLE_GEN_MODEL environment variable with a valid model name.`,
+    };
+  } catch (error) {
+    console.error("Title generation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to generate title",
+    };
+  }
+}
+
 export interface ImageGenerationResult {
   success: boolean;
   imageData?: string; // Base64 encoded image

@@ -78,7 +78,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       return new Promise((resolve) => {
         try {
           // Send a ping message to check if content script is available
-          chrome.tabs.sendMessage(tab.id!, { type: 'PING' }, (response) => {
+          chrome.tabs.sendMessage(tab.id!, { type: 'PING' }, () => {
             if (chrome.runtime.lastError) {
               resolve(false);
             } else {
@@ -91,14 +91,40 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       });
     };
 
+    // Helper to ensure content script is loaded (wait and retry)
+    const ensureContentScriptLoaded = async (): Promise<boolean> => {
+      const isLoaded = await checkContentScriptLoaded();
+      if (isLoaded) {
+        return true;
+      }
+
+      // Note: In Manifest V3, we can't dynamically inject content scripts
+      // They must be declared in manifest.json
+      // So we'll just wait a bit longer and retry
+      try {
+        console.log('Content script not loaded, waiting for it to initialize...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        return await checkContentScriptLoaded();
+      } catch (err) {
+        console.error('Failed to ensure content script loaded:', err);
+        return false;
+      }
+    };
+
     // Helper to extract data using content script message
     const extractViaMessage = async (retries = 3, delay = 1000): Promise<PendingPrompt | null> => {
-      // First check if content script is loaded
-      const isLoaded = await checkContentScriptLoaded();
+      // First ensure content script is loaded
+      const isLoaded = await ensureContentScriptLoaded();
       if (!isLoaded && retries > 0) {
-        console.log('Content script not loaded, waiting...');
+        console.log('Content script not loaded, waiting and retrying...');
         await new Promise(resolve => setTimeout(resolve, delay));
         return extractViaMessage(retries - 1, delay);
+      }
+      
+      if (!isLoaded) {
+        console.warn('Content script could not be loaded after retries');
+        return null;
       }
 
       return new Promise((resolve) => {
@@ -225,7 +251,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
               if (!el) return [];
               const images: string[] = [];
               const photos = el.querySelectorAll('[data-testid="tweetPhoto"] img');
-              photos.forEach((img: HTMLImageElement) => {
+              photos.forEach((imgEl) => {
+                const img = imgEl as HTMLImageElement;
                 let src = img.src;
                 if (src && src.includes('twimg.com')) {
                   src = src.replace(/&name=\w+/, '&name=large').replace(/\?name=\w+/, '?name=large');
@@ -271,22 +298,42 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     // Main extraction logic
     (async () => {
-      // First, try to use content script message (faster, has full functionality)
-      let data = await extractViaMessage(2, 500);
-      
-      // If that fails, try script injection as fallback
-      if (!data || !data.text) {
-        console.log('Content script not available, trying script injection...');
-        data = await extractViaScript();
-      }
+      try {
+        // First, try to use content script message (faster, has full functionality)
+        let data = await extractViaMessage(3, 1000);
+        
+        // If that fails, try script injection as fallback
+        if (!data || (!data.text && (!data.imageUrls || data.imageUrls.length === 0))) {
+          console.log('Content script not available or no data extracted, trying script injection...');
+          try {
+            const scriptData = await extractViaScript();
+            if (scriptData && (scriptData.text || (scriptData.imageUrls && scriptData.imageUrls.length > 0))) {
+              data = scriptData;
+            }
+          } catch (scriptErr) {
+            console.error('Script injection also failed:', scriptErr);
+          }
+        }
 
-      // If we have data, save it
-      if (data && (data.text || data.imageUrls?.length > 0)) {
-        await setPendingPrompt(data);
-        chrome.action.openPopup();
-      } else {
-        // Final fallback: create empty prompt
-        console.log('No data extracted, creating empty prompt');
+        // If we have data, save it
+        if (data && (data.text || (data.imageUrls && data.imageUrls.length > 0))) {
+          await setPendingPrompt(data);
+          chrome.action.openPopup();
+        } else {
+          // Final fallback: create empty prompt
+          console.log('No data extracted, creating empty prompt');
+          const fallbackPrompt: PendingPrompt = {
+            text: '',
+            sourceUrl: tab.url || '',
+            sourceTitle: tab.title,
+            sourceType: detectSourceType(tab.url || ''),
+          };
+          await setPendingPrompt(fallbackPrompt);
+          chrome.action.openPopup();
+        }
+      } catch (err) {
+        console.error('Error in main extraction logic:', err);
+        // Create empty prompt on any error
         const fallbackPrompt: PendingPrompt = {
           text: '',
           sourceUrl: tab.url || '',

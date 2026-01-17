@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createPrompt } from '../../lib/api';
+import { createPrompt, generateTitle } from '../../lib/api';
 import { parsePrompt } from '../../lib/parser';
 import { ImagePreview } from './ImagePreview';
 import { TagInput } from './TagInput';
@@ -15,10 +15,11 @@ interface PromptFormProps {
 export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps) {
   const [title, setTitle] = useState('');
   const [promptText, setPromptText] = useState('');
-  const [type, setType] = useState<PromptType>('text-to-image');
+  const [type, setType] = useState<PromptType>('image-to-image'); // Default to image-to-image
   const [tags, setTags] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
@@ -26,18 +27,55 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
     // Parse the pending prompt
     const parsed = parsePrompt(pendingPrompt.text);
 
-    // Set initial values
-    setPromptText(parsed.cleanText || pendingPrompt.text);
-    setType(parsed.type);
+    // Set initial values IMMEDIATELY (don't wait for title generation)
+    const finalPromptText = parsed.cleanText || pendingPrompt.text;
+    setPromptText(finalPromptText);
+    
+    // Default to image-to-image (user's primary workflow)
+    // Only use parsed type if it's a video type, otherwise always use image-to-image
+    if (parsed.type === 'text-to-video' || parsed.type === 'image-to-video') {
+      setType(parsed.type); // Keep video types as detected
+    } else {
+      setType('image-to-image'); // Default to image-to-image for all other cases
+    }
+    
     setTags(parsed.tags);
 
-    // Generate title from first few words
-    const words = (parsed.cleanText || pendingPrompt.text).split(' ').slice(0, 6);
-    setTitle(words.join(' ') + (words.length >= 6 ? '...' : ''));
+    // Set temporary title from first few words (fallback)
+    const words = finalPromptText.split(' ').slice(0, 6);
+    const tempTitle = words.join(' ') + (words.length >= 6 ? '...' : '');
+    setTitle(tempTitle);
 
     // Set first image if available
     if (pendingPrompt.imageUrls && pendingPrompt.imageUrls.length > 0) {
       setSelectedImage(pendingPrompt.imageUrls[0]);
+    }
+
+    // Generate title using LLM in background (non-blocking)
+    // Start generation immediately but don't block UI rendering
+    if (finalPromptText && finalPromptText.length >= 10) {
+      // Use requestAnimationFrame to ensure UI renders first, then start generation
+      requestAnimationFrame(() => {
+        setIsGeneratingTitle(true);
+        
+        // Generate title asynchronously without blocking
+        generateTitle(finalPromptText)
+          .then((result) => {
+            if (result.success && result.data?.title) {
+              setTitle(result.data.title);
+            } else {
+              // If generation fails, keep the temporary title (silently)
+              console.warn('Title generation failed, using temporary title:', result.error);
+            }
+          })
+          .catch((err) => {
+            console.error('Failed to generate title:', err);
+            // Keep the temporary title on error (silently fail)
+          })
+          .finally(() => {
+            setIsGeneratingTitle(false);
+          });
+      });
     }
   }, [pendingPrompt]);
 
@@ -124,14 +162,26 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       {/* Title */}
       <div>
         <label className="block text-sm font-medium mb-1.5">Title</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter a title for your prompt"
-          required
-          className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            value={isGeneratingTitle ? 'Generating title...' : title}
+            onChange={(e) => {
+              if (!isGeneratingTitle) {
+                setTitle(e.target.value);
+              }
+            }}
+            placeholder="Enter a title for your prompt"
+            required
+            disabled={isGeneratingTitle}
+            className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+          {isGeneratingTitle && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Prompt Text */}
