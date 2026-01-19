@@ -84,10 +84,12 @@ export const useUIStore = create<UIStore>()((set) => ({
 interface PreferencesStore {
   theme: "light" | "dark" | "system";
   defaultPromptType: PromptType;
-  compactView: boolean;
+  viewMode: "grid" | "list" | "masonry" | "compact";
+  gridColumns: number;
   setTheme: (theme: "light" | "dark" | "system") => void;
   setDefaultPromptType: (type: PromptType) => void;
-  setCompactView: (compact: boolean) => void;
+  setViewMode: (mode: "grid" | "list" | "masonry" | "compact") => void;
+  setGridColumns: (columns: number) => void;
 }
 
 export const usePreferencesStore = create<PreferencesStore>()(
@@ -95,7 +97,8 @@ export const usePreferencesStore = create<PreferencesStore>()(
     (set) => ({
       theme: "system",
       defaultPromptType: "text-to-image",
-      compactView: false,
+      viewMode: "masonry",
+      gridColumns: 3,
 
       setTheme: (theme) => {
         set({ theme });
@@ -113,7 +116,8 @@ export const usePreferencesStore = create<PreferencesStore>()(
         }
       },
       setDefaultPromptType: (type) => set({ defaultPromptType: type }),
-      setCompactView: (compact) => set({ compactView: compact }),
+      setViewMode: (mode) => set({ viewMode: mode }),
+      setGridColumns: (columns) => set({ gridColumns: columns }),
     }),
     {
       name: "prompt-gallery-preferences",

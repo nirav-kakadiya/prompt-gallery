@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PromptCard, PromptCardSkeleton } from "@/components/cards/prompt-card";
 import { FiltersSidebar } from "@/components/layout/filters-sidebar";
 import { useInfinitePrompts } from "@/hooks/use-prompts";
-import { useFilterStore, useUIStore } from "@/store";
+import { useFilterStore, useUIStore, usePreferencesStore } from "@/store";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import {
@@ -28,8 +28,7 @@ export function GallerySection() {
   } = useInfinitePrompts();
   const { query, types, tags, clearFilters } = useFilterStore();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
-  const [viewMode, setViewMode] = React.useState<"grid" | "list" | "masonry" | "compact">("masonry");
-  const [gridColumns, setGridColumns] = React.useState(3);
+  const { viewMode, setViewMode, gridColumns, setGridColumns } = usePreferencesStore();
 
   const hasActiveFilters = query || types.length > 0 || tags.length > 0;
 

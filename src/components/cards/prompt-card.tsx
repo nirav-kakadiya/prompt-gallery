@@ -431,20 +431,20 @@ export function PromptCard({
 
             {/* Content */}
             <div className={cn(
-              "flex flex-col flex-1",
-              isCompact ? "p-2.5 pb-2 gap-2" : "p-4 space-y-3"
+              "flex flex-col flex-1 min-h-0",
+              isCompact ? "p-2.5 pb-2 gap-1.5" : "p-4 space-y-3"
             )}>
-              <div className={cn("flex flex-col", isCompact ? "gap-1.5" : "gap-2")}>
+              <div className={cn("flex flex-col min-w-0", isCompact ? "gap-1" : "gap-2")}>
                 {/* Title */}
                 <h3 className={cn(
-                  "font-bold transition-colors group-hover:text-primary leading-[1.2]",
-                  isCompact ? "text-[13px] line-clamp-2 min-h-[2.1rem]" : "text-base line-clamp-1"
+                  "font-bold transition-colors group-hover:text-primary leading-[1.15]",
+                  isCompact ? "text-[12.5px] line-clamp-2 min-h-[1.9rem]" : "text-base line-clamp-1"
                 )}>
                   {prompt.title}
                 </h3>
 
                 {/* Author */}
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className={cn("flex items-center gap-1.5 min-w-0")}>
                   {prompt.author ? (
                     <>
                       <UserAvatar
@@ -457,7 +457,7 @@ export function PromptCard({
                       />
                       <span className={cn(
                         "text-muted-foreground truncate font-medium",
-                        isCompact ? "text-[10px]" : "text-sm"
+                        isCompact ? "text-[10.5px]" : "text-sm"
                       )}>
                         {prompt.author.name || prompt.author.username || "Anonymous"}
                       </span>
@@ -465,7 +465,7 @@ export function PromptCard({
                   ) : (
                     <span className={cn(
                       "text-muted-foreground font-medium",
-                      isCompact ? "text-[10px]" : "text-sm"
+                      isCompact ? "text-[10.5px]" : "text-sm"
                     )}>
                       Anonymous
                     </span>
@@ -523,10 +523,10 @@ export function PromptCard({
                 )}
 
                 {isCompact && (
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground/50 font-bold border-t border-border/40 pt-2 mt-1">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground/50 font-bold border-t border-border/40 pt-2 mt-0.5 px-0.5">
                     <div className="flex items-center gap-2">
                       <span className="flex items-center gap-0.5">
-                        <Heart className={cn("h-2.5 w-2.5", isLiked && "fill-current text-destructive")} />
+                        <Heart className={cn("h-2.5 w-2.5", isLiked && "fill-current text-destructive/90")} />
                         {formatNumber(prompt.likeCount)}
                       </span>
                       <span className="flex items-center gap-0.5">
@@ -597,8 +597,8 @@ export function PromptCardSkeleton({ viewMode = "grid" }: { viewMode?: "grid" | 
       )}>
         {/* Title skeleton */}
         <div className="space-y-1">
-          <div className={cn("bg-muted rounded animate-pulse", isCompact ? "h-3.5 w-full" : "h-5 w-3/4")} />
-          {isCompact && <div className="bg-muted rounded animate-pulse h-3.5 w-2/3" />}
+          <div className={cn("bg-muted rounded animate-pulse", isCompact ? "h-3 w-full" : "h-5 w-3/4")} />
+          {isCompact && <div className="bg-muted rounded animate-pulse h-3 w-4/5" />}
         </div>
 
         {/* Author skeleton */}
