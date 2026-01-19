@@ -38,6 +38,7 @@ const navLinks = [
   { href: "/", label: "Browse" },
   { href: "/categories", label: "Categories" },
   { href: "/collections", label: "Collections" },
+  { href: "/collections/discover", label: "Discover" },
 ];
 
 export function Header({ onSearch }: HeaderProps) {

@@ -37,6 +37,7 @@ model User {
   prompts       Prompt[]
   likes         Like[]
   collections   Collection[]
+  savedCollections SavedCollection[]
   apiKeys       ApiKey[]
 }
 
@@ -152,12 +153,29 @@ model Collection {
   isPublic      Boolean  @default(true)
   ownerId       String
   promptCount   Int      @default(0)
+  saveCount     Int      @default(0) // How many users saved this collection
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   prompts       CollectionPrompt[]
+  savedBy       SavedCollection[]
+
+  @@index([isPublic])
+  @@index([saveCount])
+}
+
+// Saved Collections - tracks which users have saved which public collections
+model SavedCollection {
+  userId        String
+  collectionId  String
+  savedAt       DateTime @default(now())
+
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, collectionId])
 }
 
 // Junction table for Collection <-> Prompt many-to-many

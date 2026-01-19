@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           include: {
             prompt: {
               include: {
-                author: { select: { name: true, username: true } },
+                author: { select: { id: true, name: true, username: true, image: true } },
               },
             },
           },

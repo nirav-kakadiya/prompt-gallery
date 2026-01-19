@@ -23,9 +23,18 @@ import {
   Share2,
   Loader2,
   FolderOpen,
+  Bookmark,
+  BookmarkCheck,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useCollection, useDeleteCollection } from "@/hooks/use-collections";
+import {
+  useCollection,
+  useDeleteCollection,
+  useSaveCollection,
+  useUnsaveCollection,
+  useSavedCollections,
+} from "@/hooks/use-collections";
 import { useAuthStore } from "@/hooks/use-auth";
 import { EditCollectionModal } from "@/components/collections/edit-collection-modal";
 import type { PromptType } from "@/lib/utils";
@@ -37,11 +46,16 @@ export default function CollectionDetailPage() {
 
   const { user } = useAuthStore();
   const { data: collection, isLoading, error } = useCollection(id);
+  const { data: savedCollections } = useSavedCollections();
   const deleteCollectionMutation = useDeleteCollection();
+  const saveCollectionMutation = useSaveCollection();
+  const unsaveCollectionMutation = useUnsaveCollection();
 
   const [showEditModal, setShowEditModal] = React.useState(false);
 
   const isOwner = user?.id === collection?.ownerId;
+  const isSaved = savedCollections?.some((sc) => sc.id === id) ?? false;
+  const canSave = user && !isOwner && collection?.isPublic;
 
   const handleShare = async () => {
     try {
@@ -49,6 +63,25 @@ export default function CollectionDetailPage() {
       toast.success("Link copied to clipboard!");
     } catch {
       toast.error("Failed to copy link");
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) {
+      toast.error("Please sign in to save collections");
+      return;
+    }
+
+    try {
+      if (isSaved) {
+        await unsaveCollectionMutation.mutateAsync(id);
+        toast.success("Collection removed from saved");
+      } else {
+        await saveCollectionMutation.mutateAsync(id);
+        toast.success("Collection saved!");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save collection");
     }
   };
 
@@ -153,10 +186,39 @@ export default function CollectionDetailPage() {
               </Link>
               {" · "}
               {collection._count.prompts} {collection._count.prompts === 1 ? "prompt" : "prompts"}
+              {(collection.saveCount ?? 0) > 0 && (
+                <>
+                  {" · "}
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    {collection.saveCount} {collection.saveCount === 1 ? "save" : "saves"}
+                  </span>
+                </>
+              )}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
+            {canSave && (
+              <Button
+                variant={isSaved ? "default" : "outline"}
+                size="sm"
+                onClick={handleSave}
+                disabled={saveCollectionMutation.isPending || unsaveCollectionMutation.isPending}
+              >
+                {isSaved ? (
+                  <>
+                    <BookmarkCheck className="w-4 h-4 mr-2" />
+                    Saved
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="w-4 h-4 mr-2" />
+                    Save
+                  </>
+                )}
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="w-4 h-4 mr-2" />
               Share

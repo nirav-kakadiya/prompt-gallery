@@ -130,6 +130,7 @@ export interface Collection {
   isPublic: boolean;
   ownerId: string;
   promptCount: number;
+  saveCount: number;
   createdAt: string;
   updatedAt: string;
 }

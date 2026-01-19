@@ -4,21 +4,40 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Folder, Lock, Globe, Loader2, X, Image as ImageIcon } from "lucide-react";
+import {
+  Plus,
+  Folder,
+  Lock,
+  Globe,
+  Loader2,
+  X,
+  Image as ImageIcon,
+  Compass,
+  Bookmark,
+  FolderOpen,
+} from "lucide-react";
 import { PageLayout, PageHeader, EmptyState } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/hooks/use-auth";
-import { useCollections, useCreateCollection } from "@/hooks/use-collections";
+import {
+  useCollections,
+  useCreateCollection,
+  useSavedCollections,
+} from "@/hooks/use-collections";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+type Tab = "my" | "saved";
 
 export default function CollectionsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuthStore();
-  const { data: collections, isLoading: collectionsLoading } = useCollections();
+  const { data: myCollections, isLoading: myLoading } = useCollections();
+  const { data: savedCollections, isLoading: savedLoading } = useSavedCollections();
   const createCollectionMutation = useCreateCollection();
 
+  const [activeTab, setActiveTab] = React.useState<Tab>("my");
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [newCollection, setNewCollection] = React.useState({
     name: "",
@@ -53,23 +72,70 @@ export default function CollectionsPage() {
     }
   };
 
-  const isLoading = authLoading || collectionsLoading;
+  const isLoading = authLoading || (activeTab === "my" ? myLoading : savedLoading);
   const isCreating = createCollectionMutation.isPending;
+  const collections = activeTab === "my" ? myCollections : savedCollections;
 
   if (!isAuthenticated && !authLoading) return null;
 
   return (
     <PageLayout>
       <PageHeader
-        title="Your Collections"
-        description="Organize your favorite prompts into collections"
+        title="Collections"
+        description="Organize and discover prompt collections"
         actions={
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Collection
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/collections/discover">
+                <Compass className="w-4 h-4 mr-2" />
+                Discover
+              </Link>
+            </Button>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Collection
+            </Button>
+          </div>
         }
       />
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit mb-8">
+        <button
+          onClick={() => setActiveTab("my")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            activeTab === "my"
+              ? "bg-background shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <FolderOpen className="w-4 h-4" />
+          My Collections
+          {myCollections && myCollections.length > 0 && (
+            <span className="text-xs bg-muted-foreground/20 px-1.5 rounded">
+              {myCollections.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("saved")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            activeTab === "saved"
+              ? "bg-background shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Bookmark className="w-4 h-4" />
+          Saved
+          {savedCollections && savedCollections.length > 0 && (
+            <span className="text-xs bg-muted-foreground/20 px-1.5 rounded">
+              {savedCollections.length}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Loading state */}
       {isLoading && (
@@ -81,13 +147,32 @@ export default function CollectionsPage() {
       {/* Empty state */}
       {!isLoading && (!collections || collections.length === 0) && (
         <EmptyState
-          icon={<Folder className="w-8 h-8 text-muted-foreground" />}
-          title="No collections yet"
-          description="Create your first collection to organize your favorite prompts"
+          icon={
+            activeTab === "my" ? (
+              <Folder className="w-8 h-8 text-muted-foreground" />
+            ) : (
+              <Bookmark className="w-8 h-8 text-muted-foreground" />
+            )
+          }
+          title={activeTab === "my" ? "No collections yet" : "No saved collections"}
+          description={
+            activeTab === "my"
+              ? "Create your first collection to organize your favorite prompts"
+              : "Discover and save public collections from the community"
+          }
           action={
-            <Button onClick={() => setShowCreateModal(true)}>
-              Create Collection
-            </Button>
+            activeTab === "my" ? (
+              <Button onClick={() => setShowCreateModal(true)}>
+                Create Collection
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/collections/discover">
+                  <Compass className="w-4 h-4 mr-2" />
+                  Discover Collections
+                </Link>
+              </Button>
+            )
           }
         />
       )}
@@ -106,13 +191,7 @@ export default function CollectionsPage() {
                 <div className="group p-6 rounded-2xl border bg-card hover:shadow-lg transition-all">
                   {/* Cover image or thumbnails */}
                   <div className="aspect-video rounded-xl bg-muted mb-4 overflow-hidden relative">
-                    {collection.coverImageUrl ? (
-                      <img
-                        src={collection.coverImageUrl}
-                        alt={collection.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : collection.prompts && collection.prompts.length > 0 ? (
+                    {collection.prompts && collection.prompts.length > 0 ? (
                       <div className="grid grid-cols-2 grid-rows-2 w-full h-full gap-0.5">
                         {collection.prompts.slice(0, 4).map((p) => (
                           <div key={p.prompt.id} className="bg-muted-foreground/10">
@@ -129,12 +208,16 @@ export default function CollectionsPage() {
                             )}
                           </div>
                         ))}
-                        {/* Fill remaining slots */}
-                        {Array.from({ length: Math.max(0, 4 - collection.prompts.length) }).map((_, i) => (
-                          <div key={`empty-${i}`} className="bg-muted-foreground/10 flex items-center justify-center">
-                            <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
-                          </div>
-                        ))}
+                        {Array.from({ length: Math.max(0, 4 - collection.prompts.length) }).map(
+                          (_, i) => (
+                            <div
+                              key={`empty-${i}`}
+                              className="bg-muted-foreground/10 flex items-center justify-center"
+                            >
+                              <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
+                            </div>
+                          )
+                        )}
                       </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -156,8 +239,28 @@ export default function CollectionsPage() {
                           {collection.description}
                         </p>
                       )}
+                      {/* Show owner for saved collections */}
+                      {activeTab === "saved" && "owner" in collection && collection.owner && (
+                        <div className="flex items-center gap-2 mt-2">
+                          {collection.owner.image ? (
+                            <img
+                              src={collection.owner.image}
+                              alt=""
+                              className="w-4 h-4 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-4 h-4 rounded-full bg-muted" />
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            by {collection.owner.name || collection.owner.username || "Anonymous"}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="ml-2 flex-shrink-0" title={collection.isPublic ? "Public" : "Private"}>
+                    <div
+                      className="ml-2 flex-shrink-0"
+                      title={collection.isPublic ? "Public" : "Private"}
+                    >
                       {collection.isPublic ? (
                         <Globe className="w-4 h-4 text-muted-foreground" />
                       ) : (

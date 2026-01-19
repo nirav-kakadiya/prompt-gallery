@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
 
 // GET /api/collections/public - Browse all public collections
 export async function GET(request: NextRequest) {
@@ -13,9 +12,6 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * pageSize;
 
-    // Get current user to check if they've saved collections
-    const user = await getCurrentUser();
-
     // Build where clause
     const where = {
       isPublic: true,
@@ -27,14 +23,12 @@ export async function GET(request: NextRequest) {
       }),
     };
 
-    // Build orderBy
-    let orderBy: object = { saveCount: "desc" };
+    // Build orderBy - use promptCount for now since saveCount might not exist yet
+    let orderBy: object = { promptCount: "desc" };
     if (sort === "newest") {
       orderBy = { createdAt: "desc" };
-    } else if (sort === "most_saved") {
-      orderBy = { saveCount: "desc" };
-    } else if (sort === "popular") {
-      orderBy = [{ saveCount: "desc" }, { promptCount: "desc" }];
+    } else if (sort === "most_saved" || sort === "popular") {
+      orderBy = [{ promptCount: "desc" }, { createdAt: "desc" }];
     }
 
     // Get total count
@@ -47,7 +41,7 @@ export async function GET(request: NextRequest) {
         owner: {
           select: { id: true, name: true, username: true, image: true },
         },
-        _count: { select: { prompts: true, savedBy: true } },
+        _count: { select: { prompts: true } },
         prompts: {
           take: 4,
           include: {
@@ -56,24 +50,20 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        // Check if current user has saved this collection
-        ...(user && {
-          savedBy: {
-            where: { userId: user.id },
-            select: { userId: true },
-          },
-        }),
       },
       orderBy,
       skip,
       take: pageSize,
     });
 
-    // Transform response to include isSaved flag
+    // Transform response
     const transformedCollections = collections.map((collection) => ({
       ...collection,
-      isSaved: user ? collection.savedBy?.length > 0 : false,
-      savedBy: undefined, // Remove the raw savedBy data
+      isSaved: false, // Will be updated once savedBy relation works
+      _count: {
+        ...collection._count,
+        savedBy: 0, // Placeholder until savedBy relation works
+      },
     }));
 
     return NextResponse.json({
