@@ -32,7 +32,7 @@ function GalleryContent() {
   } = useInfinitePrompts();
   const { query, types, tags, clearFilters, setQuery, toggleTag } = useFilterStore();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
-  const [viewMode, setViewMode] = React.useState<"grid" | "list" | "masonry" | "compact">("grid");
+  const [viewMode, setViewMode] = React.useState<"grid" | "list" | "masonry" | "compact">("masonry");
 
   // Handle URL parameters
   React.useEffect(() => {
@@ -176,14 +176,15 @@ function GalleryContent() {
             {isLoading && (
               <div
                 className={cn(
-                  "grid gap-6",
+                  viewMode === "masonry"
+                    ? "columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-6 space-y-6 block"
+                    : "grid gap-6",
                   viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
                   viewMode === "compact" && "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4",
-                  viewMode === "list" && "grid-cols-1",
-                  viewMode === "masonry" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+                  viewMode === "list" && "grid-cols-1"
                 )}
               >
-                {Array.from({ length: viewMode === "compact" ? 12 : 9 }).map((_, i) => (
+                {Array.from({ length: viewMode === "compact" ? 12 : 12 }).map((_, i) => (
                   <PromptCardSkeleton key={i} viewMode={viewMode} />
                 ))}
               </div>
@@ -271,13 +272,13 @@ export default function GalleryPage() {
   return (
     <Suspense fallback={
       <PageLayout fullWidth>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="animate-pulse">
             <div className="h-8 bg-muted rounded w-48 mb-4" />
             <div className="h-4 bg-muted rounded w-64 mb-8" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <PromptCardSkeleton key={i} />
+            <div className="columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-6 space-y-6 block">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <PromptCardSkeleton key={i} viewMode="masonry" />
               ))}
             </div>
           </div>

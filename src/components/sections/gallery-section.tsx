@@ -28,7 +28,7 @@ export function GallerySection() {
   } = useInfinitePrompts();
   const { query, types, tags, clearFilters } = useFilterStore();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
-  const [viewMode, setViewMode] = React.useState<"grid" | "list" | "masonry" | "compact">("grid");
+  const [viewMode, setViewMode] = React.useState<"grid" | "list" | "masonry" | "compact">("masonry");
 
   const hasActiveFilters = query || types.length > 0 || tags.length > 0;
 
@@ -156,14 +156,15 @@ export function GallerySection() {
             {isLoading && (
               <div
                 className={cn(
-                  "grid gap-6",
+                  viewMode === "masonry"
+                    ? "columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-6 space-y-6 block"
+                    : "grid gap-6",
                   viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
                   viewMode === "compact" && "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4",
-                  viewMode === "list" && "grid-cols-1",
-                  viewMode === "masonry" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+                  viewMode === "list" && "grid-cols-1"
                 )}
               >
-                {Array.from({ length: viewMode === "compact" ? 12 : 9 }).map((_, i) => (
+                {Array.from({ length: viewMode === "compact" ? 12 : 12 }).map((_, i) => (
                   <PromptCardSkeleton key={i} viewMode={viewMode} />
                 ))}
               </div>
