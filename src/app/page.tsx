@@ -1,22 +1,24 @@
-"use client";
-
-import { Header } from "@/components/layout/header";
+import { SmoothScroll } from "@/components/landing/smooth-scroll";
+import { LandingHeader } from "@/components/landing/landing-header";
+import { LandingHero } from "@/components/landing/landing-hero";
+import { LandingFeatures } from "@/components/landing/landing-features";
+import { LandingShowcase } from "@/components/landing/landing-showcase";
+import { LandingCTA } from "@/components/landing/landing-cta";
 import { Footer } from "@/components/layout/footer";
-import { HeroSection } from "@/components/sections/hero-section";
-import { GallerySection } from "@/components/sections/gallery-section";
-import { useFilterStore } from "@/store";
 
-export default function HomePage() {
-  const { setQuery } = useFilterStore();
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header onSearch={setQuery} />
-      <main className="flex-1 pt-20 md:pt-24">
-        <HeroSection />
-        <GallerySection />
-      </main>
-      <Footer />
-    </div>
+    <SmoothScroll>
+      <div className="flex flex-col min-h-screen">
+        <LandingHeader />
+        <main className="flex-1">
+          <LandingHero />
+          <LandingShowcase />
+          <LandingFeatures />
+          <LandingCTA />
+        </main>
+        <Footer />
+      </div>
+    </SmoothScroll>
   );
 }

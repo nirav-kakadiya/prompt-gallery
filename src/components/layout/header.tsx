@@ -35,7 +35,7 @@ interface HeaderProps {
 }
 
 const navLinks = [
-  { href: "/", label: "Browse" },
+  { href: "/gallery", label: "Explore" },
   { href: "/categories", label: "Categories" },
   { href: "/collections", label: "Collections" },
   { href: "/collections/discover", label: "Discover" },
