@@ -168,7 +168,7 @@ export function EditPromptModal({
               disabled={isLoading}
               required
             />
-            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="mt-1 text-xs text-muted-foreground">
               {title.length}/100 characters
             </p>
           </div>
@@ -195,7 +195,7 @@ export function EditPromptModal({
                       "disabled:cursor-not-allowed disabled:opacity-50",
                       isSelected
                         ? `${config.borderColor} ${config.bgColor} ring-2 ring-offset-2 ring-offset-background ${config.ringColor}`
-                        : "border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                        : "border-input hover:bg-accent hover:text-accent-foreground"
                     )}
                   >
                     {isSelected && (
@@ -206,7 +206,7 @@ export function EditPromptModal({
                         <Check className="w-3 h-3 text-white" />
                       </div>
                     )}
-                    <Icon className={cn("w-5 h-5", isSelected ? config.textColor : "text-neutral-500")} />
+                    <Icon className={cn("w-5 h-5", isSelected ? config.textColor : "text-muted-foreground")} />
                     <span className={cn(
                       "text-sm font-medium",
                       isSelected && config.textColor
@@ -229,7 +229,7 @@ export function EditPromptModal({
               onChange={(e) => setPromptText(e.target.value)}
               rows={6}
               disabled={isLoading}
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-white resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:ring-neutral-50/10 dark:focus:border-neutral-600"
+              className="w-full px-4 py-3 rounded-xl border border-input bg-background resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 text-foreground"
               required
             />
           </div>
@@ -275,7 +275,7 @@ export function EditPromptModal({
                       onClick={() => !isLoading && handleRemoveTag(tag)}
                     >
                       {tag}
-                      <X className="ml-1 h-3 w-3 group-hover:text-red-500 transition-colors" />
+                      <X className="ml-1 h-3 w-3 group-hover:text-destructive transition-colors" />
                     </Badge>
                   ))}
                 </div>
@@ -283,7 +283,7 @@ export function EditPromptModal({
 
               {/* Suggested tags */}
               <div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   Suggested:
                 </p>
                 <div className="flex flex-wrap gap-1">
@@ -294,7 +294,7 @@ export function EditPromptModal({
                       <Badge
                         key={tag}
                         variant="outline"
-                        className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
                         onClick={() => !isLoading && handleAddTag(tag)}
                       >
                         + {tag}

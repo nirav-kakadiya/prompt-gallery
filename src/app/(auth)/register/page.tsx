@@ -260,7 +260,7 @@ export default function RegisterPage() {
                   id="terms"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-gray-300"
+                  className="mt-1 h-4 w-4 rounded border-input bg-background"
                 />
                 <label htmlFor="terms" className="text-sm text-muted-foreground">
                   I agree to the{" "}

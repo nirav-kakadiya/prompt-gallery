@@ -241,7 +241,7 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
               <span className="text-sm font-medium">{formatNumber(copyCount)}</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Heart className={cn("h-4 w-4", isLiked && "fill-red-500 text-red-500")} />
+              <Heart className={cn("h-4 w-4", isLiked && "fill-destructive text-destructive")} />
               <span className="text-sm font-medium">{formatNumber(prompt.likeCount)}</span>
             </div>
           </div>
@@ -310,7 +310,7 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
             size="lg"
             variant={isLiked ? "default" : "outline"}
             onClick={handleLike}
-            className={cn(isLiked && "bg-red-500 hover:bg-red-600")}
+            className={cn(isLiked && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
           >
             <Heart className={cn("h-5 w-5 mr-2", isLiked && "fill-current")} />
             {isLiked ? "Liked" : "Like"}

@@ -9,7 +9,7 @@ function Skeleton({
   return (
     <div
       className={cn(
-        "animate-pulse rounded-xl bg-neutral-200/60 dark:bg-neutral-800/60",
+        "animate-pulse rounded-xl bg-muted",
         className
       )}
       {...props}
@@ -20,7 +20,7 @@ function Skeleton({
 // Prompt card skeleton for loading states
 function PromptCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-neutral-200/60 bg-white overflow-hidden dark:border-neutral-800/60 dark:bg-neutral-900">
+    <div className="rounded-2xl border bg-card overflow-hidden">
       {/* Image skeleton */}
       <Skeleton className="aspect-[4/3] w-full rounded-none" />
 

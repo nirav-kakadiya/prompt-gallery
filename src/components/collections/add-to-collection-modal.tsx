@@ -178,16 +178,16 @@ export function AddToCollectionModal({
                     disabled={isAdded || isAdding}
                     className={cn(
                       "w-full flex items-center justify-between p-3 rounded-xl border transition-all",
-                      "hover:bg-neutral-50 dark:hover:bg-neutral-800/50",
+                      "hover:bg-accent hover:text-accent-foreground",
                       "disabled:cursor-not-allowed",
                       isAdded
-                        ? "border-green-500/50 bg-green-50 dark:bg-green-950/20"
-                        : "border-neutral-200 dark:border-neutral-800"
+                        ? "border-green-500/50 bg-green-500/10"
+                        : "border-input"
                     )}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {/* Collection preview thumbnails */}
-                      <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 overflow-hidden flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                         {collection.prompts[0]?.prompt?.imageUrl ? (
                           <img
                             src={collection.prompts[0].prompt.imageUrl}

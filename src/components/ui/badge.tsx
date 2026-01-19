@@ -16,22 +16,22 @@ const badgeVariants = cva(
         outline:
           "border border-input bg-background text-foreground",
         success:
-          "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+          "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20",
         warning:
-          "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+          "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
         error:
-          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+          "bg-destructive/10 text-destructive border border-destructive/20",
         info:
-          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+          "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
         // Prompt type badges
         "text-to-image":
-          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+          "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
         "text-to-video":
-          "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+          "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
         "image-to-image":
-          "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+          "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
         "image-to-video":
-          "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+          "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20",
       },
       size: {
         default: "px-2.5 py-0.5 text-xs",

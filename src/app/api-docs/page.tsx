@@ -37,9 +37,10 @@ export default function ApiDocsPage() {
             {endpoints.map((endpoint) => (
               <div key={endpoint.path} className="p-4 rounded-xl border">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className={`px-2 py-1 rounded text-xs font-mono font-bold ${
-                    endpoint.method === "GET" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" :
-                    "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                  <span className={`px-2 py-1 rounded text-xs font-mono font-bold border ${
+                    endpoint.method === "GET" 
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
+                      : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
                   }`}>
                     {endpoint.method}
                   </span>

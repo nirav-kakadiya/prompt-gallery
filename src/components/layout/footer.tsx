@@ -59,9 +59,9 @@ export function Footer() {
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
               <div className="relative w-8 h-8">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg rotate-6" />
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-700 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+                <div className="absolute inset-0 bg-primary/20 rounded-lg rotate-6" />
+                <div className="absolute inset-0 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+                  <Sparkles className="w-5 h-5 text-primary-foreground" />
                 </div>
               </div>
               <span className="font-bold text-lg">Prompt Gallery</span>
@@ -112,7 +112,7 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Prompt Gallery. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground flex items-center gap-1">
-            Made with <Heart className="w-4 h-4 text-red-500 fill-red-500" /> by creators, for creators
+            Made with <Heart className="w-4 h-4 text-destructive fill-destructive" /> by creators, for creators
           </p>
         </div>
       </div>

@@ -113,7 +113,7 @@ export function EditCollectionModal({
               rows={3}
               maxLength={500}
               disabled={isLoading}
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-white resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:ring-neutral-50/10 dark:focus:border-neutral-600"
+              className="w-full px-4 py-3 rounded-xl border border-input bg-background resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 text-foreground"
             />
             <p className="mt-1 text-xs text-muted-foreground">
               {description.length}/500 characters
@@ -135,7 +135,7 @@ export function EditCollectionModal({
                   "disabled:cursor-not-allowed disabled:opacity-50",
                   isPublic
                     ? "border-primary bg-primary/5 ring-2 ring-offset-2 ring-primary/20"
-                    : "border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                    : "border-input hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 <Globe className={cn("w-5 h-5", isPublic ? "text-primary" : "text-muted-foreground")} />
@@ -157,7 +157,7 @@ export function EditCollectionModal({
                   "disabled:cursor-not-allowed disabled:opacity-50",
                   !isPublic
                     ? "border-primary bg-primary/5 ring-2 ring-offset-2 ring-primary/20"
-                    : "border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                    : "border-input hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 <Lock className={cn("w-5 h-5", !isPublic ? "text-primary" : "text-muted-foreground")} />
