@@ -60,6 +60,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     });
 
+    // Update promptCount on the collection
+    await prisma.collection.update({
+      where: { id },
+      data: { promptCount: { increment: 1 } },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to add prompt to collection:", error);
@@ -114,6 +120,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           promptId,
         },
       },
+    });
+
+    // Update promptCount on the collection
+    await prisma.collection.update({
+      where: { id },
+      data: { promptCount: { decrement: 1 } },
     });
 
     return NextResponse.json({ success: true });

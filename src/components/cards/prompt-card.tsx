@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2, Pencil } from "lucide-react";
+import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2, Pencil, FolderPlus } from "lucide-react";
 import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/hooks/use-auth";
 import { useDeletePrompt } from "@/hooks/use-prompts";
 import { EditPromptModal } from "@/components/prompts/edit-prompt-modal";
+import { AddToCollectionModal } from "@/components/collections/add-to-collection-modal";
 
 interface PromptCardProps {
   prompt: {
@@ -72,6 +73,7 @@ export function PromptCard({
   const [isCopying, setIsCopying] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
+  const [showAddToCollectionModal, setShowAddToCollectionModal] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [imageLoaded, setImageLoaded] = React.useState(false);
   
@@ -406,6 +408,18 @@ export function PromptCard({
                         View details
                       </Link>
                     </DropdownMenuItem>
+                    {user && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowAddToCollectionModal(true);
+                        }}
+                      >
+                        <FolderPlus className="mr-2 h-4 w-4" />
+                        Save to collection
+                      </DropdownMenuItem>
+                    )}
                     {isOwner && (
                       <>
                         <DropdownMenuSeparator />
@@ -539,6 +553,16 @@ export function PromptCard({
             type: prompt.type,
             tags,
           }}
+        />
+      )}
+
+      {/* Add to Collection Modal */}
+      {user && (
+        <AddToCollectionModal
+          open={showAddToCollectionModal}
+          onOpenChange={setShowAddToCollectionModal}
+          promptId={prompt.id}
+          promptTitle={prompt.title}
         />
       )}
     </TooltipProvider>

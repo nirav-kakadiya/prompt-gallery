@@ -6,69 +6,110 @@ import { useParams, useRouter } from "next/navigation";
 import { PageLayout } from "@/components/layout/page-layout";
 import { PromptCard } from "@/components/cards/prompt-card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Lock, Globe, MoreHorizontal, Pencil, Trash2, Share2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ArrowLeft,
+  Lock,
+  Globe,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Share2,
+  Loader2,
+  FolderOpen,
+} from "lucide-react";
 import { toast } from "sonner";
-
-// Mock collection data
-const mockCollection = {
-  id: "1",
-  name: "Favorite Art Prompts",
-  description: "My collection of the best art generation prompts I've found.",
-  isPublic: true,
-  createdAt: "2026-01-01",
-  author: {
-    name: "Demo User",
-    username: "demouser",
-  },
-  prompts: [
-    {
-      id: "1",
-      title: "Cyberpunk City at Night",
-      slug: "cyberpunk-city-at-night",
-      excerpt: "A neon-lit cyberpunk cityscape with flying cars...",
-      type: "midjourney",
-      copyCount: 1234,
-      likeCount: 567,
-      viewCount: 8901,
-      createdAt: new Date().toISOString(),
-      author: { name: "Artist", username: "artist" },
-      tags: [{ id: "1", name: "cyberpunk", slug: "cyberpunk" }],
-    },
-    {
-      id: "2",
-      title: "Fantasy Forest Landscape",
-      slug: "fantasy-forest-landscape",
-      excerpt: "An enchanted forest with glowing mushrooms...",
-      type: "dalle",
-      copyCount: 987,
-      likeCount: 432,
-      viewCount: 5678,
-      createdAt: new Date().toISOString(),
-      author: { name: "Creator", username: "creator" },
-      tags: [{ id: "2", name: "fantasy", slug: "fantasy" }],
-    },
-  ],
-};
+import { useCollection, useDeleteCollection } from "@/hooks/use-collections";
+import { useAuthStore } from "@/hooks/use-auth";
+import { EditCollectionModal } from "@/components/collections/edit-collection-modal";
+import type { PromptType } from "@/lib/utils";
 
 export default function CollectionDetailPage() {
-  useParams();
+  const params = useParams();
   const router = useRouter();
-  const [showMenu, setShowMenu] = React.useState(false);
+  const id = params.id as string;
 
-  // In production, fetch collection by ID
-  const collection = mockCollection;
+  const { user } = useAuthStore();
+  const { data: collection, isLoading, error } = useCollection(id);
+  const deleteCollectionMutation = useDeleteCollection();
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied to clipboard!");
-  };
+  const [showEditModal, setShowEditModal] = React.useState(false);
 
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this collection?")) {
-      toast.success("Collection deleted");
-      router.push("/collections");
+  const isOwner = user?.id === collection?.ownerId;
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard!");
+    } catch {
+      toast.error("Failed to copy link");
     }
   };
+
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this collection? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await deleteCollectionMutation.mutateAsync(id);
+      toast.success("Collection deleted successfully");
+      router.push("/collections");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete collection");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (error || !collection) {
+    return (
+      <PageLayout>
+        <div className="text-center py-20">
+          <FolderOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Collection Not Found</h2>
+          <p className="text-muted-foreground mb-6">
+            {error?.message || "This collection doesn't exist or you don't have access to it."}
+          </p>
+          <Button asChild>
+            <Link href="/collections">Back to Collections</Link>
+          </Button>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // Transform collection prompts to the format PromptCard expects
+  const prompts = collection.prompts.map((cp) => ({
+    id: cp.prompt.id,
+    title: cp.prompt.title,
+    slug: cp.prompt.slug,
+    promptText: cp.prompt.promptText,
+    type: cp.prompt.type as PromptType,
+    thumbnailUrl: cp.prompt.thumbnailUrl,
+    imageUrl: cp.prompt.imageUrl,
+    blurhash: null,
+    tags: typeof cp.prompt.tags === "string" ? JSON.parse(cp.prompt.tags || "[]") : cp.prompt.tags,
+    author: cp.prompt.author,
+    copyCount: cp.prompt.copyCount,
+    likeCount: cp.prompt.likeCount,
+    viewCount: cp.prompt.viewCount,
+    createdAt: cp.prompt.createdAt,
+  }));
 
   return (
     <PageLayout>
@@ -104,70 +145,81 @@ export default function CollectionDetailPage() {
             )}
             <p className="text-sm text-muted-foreground">
               Created by{" "}
-              <Link href={`/profile/${collection.author.username}`} className="text-primary hover:underline">
-                {collection.author.name}
+              <Link
+                href={`/profile/${collection.owner.username || collection.owner.id}`}
+                className="text-primary hover:underline"
+              >
+                {collection.owner.name || collection.owner.username || "Anonymous"}
               </Link>
               {" · "}
-              {collection.prompts.length} prompts
+              {collection._count.prompts} {collection._count.prompts === 1 ? "prompt" : "prompts"}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowMenu(!showMenu)}
-            >
-              <MoreHorizontal className="w-5 h-5" />
-            </Button>
 
-            {showMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 py-2 bg-popover border rounded-xl shadow-lg z-10">
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    toast.info("Edit collection coming soon");
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
-                >
-                  <Pencil className="w-4 h-4" />
-                  Edit Collection
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    handleDelete();
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-muted flex items-center gap-2 text-destructive"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete Collection
-                </button>
-              </div>
+            {isOwner && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit Collection
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleDelete}
+                    disabled={deleteCollectionMutation.isPending}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {deleteCollectionMutation.isPending ? "Deleting..." : "Delete Collection"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
 
         {/* Prompts grid */}
-        {collection.prompts.length > 0 ? (
+        {prompts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {collection.prompts.map((prompt) => (
-              <PromptCard key={prompt.id} prompt={prompt as unknown as Parameters<typeof PromptCard>[0]["prompt"]} />
+            {prompts.map((prompt) => (
+              <PromptCard key={prompt.id} prompt={prompt} />
             ))}
           </div>
         ) : (
           <div className="text-center py-16">
+            <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">This collection is empty</p>
             <Button asChild>
-              <Link href="/gallery">Browse Prompts</Link>
+              <Link href="/">Browse Prompts</Link>
             </Button>
           </div>
         )}
       </div>
+
+      {/* Edit Collection Modal */}
+      {isOwner && (
+        <EditCollectionModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          collection={{
+            id: collection.id,
+            name: collection.name,
+            description: collection.description,
+            isPublic: collection.isPublic,
+          }}
+        />
+      )}
     </PageLayout>
   );
 }

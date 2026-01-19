@@ -9,35 +9,17 @@ import { PageLayout, PageHeader, EmptyState } from "@/components/layout/page-lay
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/hooks/use-auth";
+import { useCollections, useCreateCollection } from "@/hooks/use-collections";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-interface Collection {
-  id: string;
-  name: string;
-  description: string | null;
-  coverImageUrl: string | null;
-  isPublic: boolean;
-  promptCount: number;
-  _count: {
-    prompts: number;
-  };
-  prompts: {
-    prompt: {
-      id: string;
-      title: string;
-      imageUrl: string | null;
-    };
-  }[];
-}
-
 export default function CollectionsPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
-  const [collections, setCollections] = React.useState<Collection[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const { data: collections, isLoading: collectionsLoading } = useCollections();
+  const createCollectionMutation = useCreateCollection();
+
   const [showCreateModal, setShowCreateModal] = React.useState(false);
-  const [isCreating, setIsCreating] = React.useState(false);
   const [newCollection, setNewCollection] = React.useState({
     name: "",
     description: "",
@@ -45,33 +27,10 @@ export default function CollectionsPage() {
   });
 
   React.useEffect(() => {
-    if (!isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       router.push("/login");
     }
-  }, [isAuthenticated, router]);
-
-  // Fetch collections
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      fetchCollections();
-    }
-  }, [isAuthenticated]);
-
-  const fetchCollections = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/collections");
-      if (response.ok) {
-        const data = await response.json();
-        setCollections(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch collections:", error);
-      toast.error("Failed to load collections");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [authLoading, isAuthenticated, router]);
 
   const handleCreateCollection = async () => {
     if (!newCollection.name.trim()) {
@@ -79,32 +38,25 @@ export default function CollectionsPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
-      const response = await fetch("/api/collections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newCollection),
+      await createCollectionMutation.mutateAsync({
+        name: newCollection.name.trim(),
+        description: newCollection.description.trim() || undefined,
+        isPublic: newCollection.isPublic,
       });
 
-      if (response.ok) {
-        const created = await response.json();
-        setCollections((prev) => [created, ...prev]);
-        setShowCreateModal(false);
-        setNewCollection({ name: "", description: "", isPublic: true });
-        toast.success("Collection created!");
-      } else {
-        const data = await response.json();
-        toast.error(data.error || "Failed to create collection");
-      }
-    } catch {
-      toast.error("Failed to create collection");
-    } finally {
-      setIsCreating(false);
+      setShowCreateModal(false);
+      setNewCollection({ name: "", description: "", isPublic: true });
+      toast.success("Collection created!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create collection");
     }
   };
 
-  if (!isAuthenticated) return null;
+  const isLoading = authLoading || collectionsLoading;
+  const isCreating = createCollectionMutation.isPending;
+
+  if (!isAuthenticated && !authLoading) return null;
 
   return (
     <PageLayout>
@@ -127,7 +79,7 @@ export default function CollectionsPage() {
       )}
 
       {/* Empty state */}
-      {!isLoading && collections.length === 0 && (
+      {!isLoading && (!collections || collections.length === 0) && (
         <EmptyState
           icon={<Folder className="w-8 h-8 text-muted-foreground" />}
           title="No collections yet"
@@ -141,7 +93,7 @@ export default function CollectionsPage() {
       )}
 
       {/* Collections grid */}
-      {!isLoading && collections.length > 0 && (
+      {!isLoading && collections && collections.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-16">
           {collections.map((collection, index) => (
             <motion.div
