@@ -154,10 +154,10 @@ export default function SettingsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all border",
                   activeTab === tab.id
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
+                    ? "bg-secondary border-border text-foreground font-medium"
+                    : "border-transparent hover:bg-muted text-muted-foreground"
                 )}
               >
                 <tab.icon className="w-5 h-5" />
@@ -321,17 +321,21 @@ export default function SettingsPage() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Choose your preferred color scheme
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     {(["light", "dark", "system"] as const).map((t) => (
-                      <Button
+                      <button
                         key={t}
-                        variant={theme === t ? "default" : "outline"}
                         onClick={() => setTheme(t)}
-                        className="capitalize"
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border",
+                          theme === t
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-input hover:bg-accent hover:text-accent-foreground"
+                        )}
                       >
-                        {theme === t && <Check className="w-4 h-4 mr-2" />}
-                        {t}
-                      </Button>
+                        {theme === t && <Check className="w-4 h-4" />}
+                        <span className="capitalize">{t}</span>
+                      </button>
                     ))}
                   </div>
                 </div>

@@ -37,22 +37,32 @@ export interface CollectionWithPrompts extends Collection {
   }>;
   _count: {
     prompts: number;
+    savedBy: number;
   };
-  saveCount: number;
+  isSaved?: boolean;
 }
 
 // Collection list item with preview prompts
 export interface CollectionListItem extends Collection {
+  owner?: {
+    id: string;
+    name: string | null;
+    username: string | null;
+    image: string | null;
+  };
   _count: {
     prompts: number;
+    savedBy?: number;
   };
   prompts: Array<{
     prompt: {
       id: string;
       title: string;
       imageUrl: string | null;
+      thumbnailUrl?: string | null;
     };
   }>;
+  isSaved?: boolean;
 }
 
 // Fetch all user's collections

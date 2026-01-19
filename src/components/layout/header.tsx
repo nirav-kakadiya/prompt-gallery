@@ -69,10 +69,28 @@ export function Header({ onSearch }: HeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Handle dark mode
+  // Handle dark mode - sync with document class
   React.useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark");
-    setIsDark(isDarkMode);
+    const syncTheme = () => {
+      const isDarkMode = document.documentElement.classList.contains("dark");
+      setIsDark(isDarkMode);
+    };
+
+    // Initial sync
+    syncTheme();
+
+    // Watch for class changes on html element
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === "class") {
+          syncTheme();
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+
+    return () => observer.disconnect();
   }, []);
 
   const toggleDarkMode = () => {
@@ -92,8 +110,8 @@ export function Header({ onSearch }: HeaderProps) {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? "bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-200/50 dark:border-neutral-800/50 shadow-sm"
-          : "bg-transparent"
+          ? "bg-background/95 backdrop-blur-xl border-b shadow-sm"
+          : "bg-background/80 backdrop-blur-sm"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -106,7 +124,7 @@ export function Header({ onSearch }: HeaderProps) {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
             </div>
-            <span className="font-bold text-xl text-neutral-900 dark:text-white hidden sm:block">
+            <span className="font-bold text-xl hidden sm:block">
               Prompt Gallery
             </span>
           </Link>
@@ -120,15 +138,15 @@ export function Header({ onSearch }: HeaderProps) {
                 className={cn(
                   "relative px-4 py-2 text-sm font-medium rounded-lg transition-colors",
                   pathname === link.href
-                    ? "text-neutral-900 dark:text-white"
-                    : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {link.label}
                 {pathname === link.href && (
                   <motion.div
                     layoutId="nav-indicator"
-                    className="absolute inset-0 bg-neutral-100 dark:bg-neutral-800 rounded-lg -z-10"
+                    className="absolute inset-0 bg-secondary rounded-lg -z-10"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
@@ -152,7 +170,7 @@ export function Header({ onSearch }: HeaderProps) {
               variant="ghost"
               size="icon"
               onClick={toggleDarkMode}
-              className="text-neutral-600 dark:text-neutral-400"
+              className="text-muted-foreground"
             >
               {isDark ? (
                 <Sun className="h-5 w-5" />
@@ -185,10 +203,10 @@ export function Header({ onSearch }: HeaderProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-2">
-                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                    <p className="text-sm font-medium">
                       {user.name || "User"}
                     </p>
-                    <p className="text-xs text-neutral-500">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -211,7 +229,7 @@ export function Header({ onSearch }: HeaderProps) {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="text-red-600 dark:text-red-400 cursor-pointer"
+                    className="text-destructive cursor-pointer"
                     onClick={handleLogout}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -257,7 +275,7 @@ export function Header({ onSearch }: HeaderProps) {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          className="md:hidden bg-white dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-800"
+          className="md:hidden bg-background border-t"
         >
           <nav className="px-4 py-4 space-y-1">
             {navLinks.map((link) => (
@@ -268,8 +286,8 @@ export function Header({ onSearch }: HeaderProps) {
                 className={cn(
                   "block px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                   pathname === link.href
-                    ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                    : "text-neutral-600 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-900"
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:bg-secondary/50"
                 )}
               >
                 {link.label}

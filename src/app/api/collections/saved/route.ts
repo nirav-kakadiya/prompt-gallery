@@ -8,61 +8,58 @@ export async function GET() {
     const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: { code: "UNAUTHORIZED", message: "Please sign in" } },
+        { status: 401 }
+      );
     }
 
-    // Check if SavedCollection table exists by trying to query it
-    // If it fails, return empty array (table not yet created)
-    try {
-      const savedCollections = await prisma.savedCollection.findMany({
-        where: { userId: user.id },
-        include: {
-          collection: {
-            include: {
-              owner: {
-                select: { id: true, name: true, username: true, image: true },
-              },
-              _count: { select: { prompts: true } },
-              prompts: {
-                take: 4,
-                include: {
-                  prompt: {
-                    select: { id: true, title: true, imageUrl: true, thumbnailUrl: true },
+    const savedCollections = await prisma.savedCollection.findMany({
+      where: { userId: user.id },
+      include: {
+        collection: {
+          include: {
+            owner: {
+              select: { id: true, name: true, username: true, image: true },
+            },
+            _count: {
+              select: { prompts: true, savedBy: true },
+            },
+            prompts: {
+              take: 4,
+              orderBy: { addedAt: "desc" },
+              include: {
+                prompt: {
+                  select: {
+                    id: true,
+                    title: true,
+                    imageUrl: true,
+                    thumbnailUrl: true,
                   },
                 },
               },
             },
           },
         },
-        orderBy: { savedAt: "desc" },
-      });
+      },
+      orderBy: { savedAt: "desc" },
+    });
 
-      // Transform to return the collections directly with isSaved = true
-      const collections = savedCollections.map((sc) => ({
-        ...sc.collection,
-        isSaved: true,
-        savedAt: sc.savedAt,
-        _count: {
-          ...sc.collection._count,
-          savedBy: 0,
-        },
-      }));
+    // Transform to return collections with isSaved flag
+    const data = savedCollections.map((sc) => ({
+      ...sc.collection,
+      isSaved: true,
+      savedAt: sc.savedAt,
+    }));
 
-      return NextResponse.json({
-        success: true,
-        data: collections,
-      });
-    } catch {
-      // SavedCollection table might not exist yet
-      return NextResponse.json({
-        success: true,
-        data: [],
-      });
-    }
+    return NextResponse.json({
+      success: true,
+      data,
+    });
   } catch (error) {
     console.error("Failed to fetch saved collections:", error);
     return NextResponse.json(
-      { error: "Failed to fetch saved collections" },
+      { success: false, error: { code: "INTERNAL_ERROR", message: "Failed to fetch saved collections" } },
       { status: 500 }
     );
   }

@@ -88,7 +88,7 @@ export function FiltersSidebar({ className }: FiltersProps) {
     >
       {/* Header with clear button */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
           <SlidersHorizontal className="h-5 w-5" />
           Filters
         </h2>
@@ -103,7 +103,7 @@ export function FiltersSidebar({ className }: FiltersProps) {
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
               >
                 Clear all
               </Button>
@@ -153,12 +153,12 @@ export function FiltersSidebar({ className }: FiltersProps) {
           onClick={() => toggleSection("types")}
           className="flex items-center justify-between w-full text-left"
         >
-          <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          <h3 className="text-sm font-medium text-muted-foreground">
             Prompt Type
           </h3>
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-neutral-400 transition-transform",
+              "h-4 w-4 text-muted-foreground transition-transform",
               expandedSections.types && "rotate-180"
             )}
           />
@@ -181,17 +181,17 @@ export function FiltersSidebar({ className }: FiltersProps) {
                     key={type}
                     onClick={() => toggleType(type)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all",
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all border",
                       isSelected
-                        ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
-                        : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-input hover:bg-accent hover:text-accent-foreground"
                     )}
                   >
                     <div
                       className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center",
                         isSelected
-                          ? "bg-white/20 dark:bg-neutral-900/20"
+                          ? "bg-primary-foreground/20"
                           : config.bgLight
                       )}
                     >
@@ -219,12 +219,12 @@ export function FiltersSidebar({ className }: FiltersProps) {
           onClick={() => toggleSection("tags")}
           className="flex items-center justify-between w-full text-left"
         >
-          <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          <h3 className="text-sm font-medium text-muted-foreground">
             Tags
           </h3>
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-neutral-400 transition-transform",
+              "h-4 w-4 text-muted-foreground transition-transform",
               expandedSections.tags && "rotate-180"
             )}
           />
@@ -243,12 +243,7 @@ export function FiltersSidebar({ className }: FiltersProps) {
                   <Badge
                     key={tag}
                     variant={isSelected ? "default" : "outline"}
-                    className={cn(
-                      "cursor-pointer transition-all",
-                      isSelected
-                        ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
-                        : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                    )}
+                    className="cursor-pointer transition-all"
                     onClick={() => toggleTag(tag)}
                   >
                     {tag}
@@ -266,12 +261,12 @@ export function FiltersSidebar({ className }: FiltersProps) {
           onClick={() => toggleSection("sort")}
           className="flex items-center justify-between w-full text-left"
         >
-          <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          <h3 className="text-sm font-medium text-muted-foreground">
             Sort By
           </h3>
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-neutral-400 transition-transform",
+              "h-4 w-4 text-muted-foreground transition-transform",
               expandedSections.sort && "rotate-180"
             )}
           />
@@ -289,10 +284,10 @@ export function FiltersSidebar({ className }: FiltersProps) {
                   key={option.value}
                   onClick={() => setSortBy(option.value as "newest" | "popular" | "most_copied" | "most_liked")}
                   className={cn(
-                    "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
+                    "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all",
                     sortBy === option.value
-                      ? "bg-neutral-100 text-neutral-900 font-medium dark:bg-neutral-800 dark:text-white"
-                      : "text-neutral-600 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-800/50"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                 >
                   {option.label}
@@ -332,9 +327,9 @@ export function MobileFilters({ isOpen, onClose }: MobileFiltersProps) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-neutral-900 rounded-t-3xl max-h-[85vh] overflow-auto lg:hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl max-h-[85vh] overflow-auto lg:hidden"
           >
-            <div className="sticky top-0 bg-white dark:bg-neutral-900 p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+            <div className="sticky top-0 bg-background p-4 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold">Filters</h2>
               <Button variant="ghost" size="icon" onClick={onClose}>
                 <X className="h-5 w-5" />
@@ -343,7 +338,7 @@ export function MobileFilters({ isOpen, onClose }: MobileFiltersProps) {
             <div className="p-4">
               <FiltersSidebar />
             </div>
-            <div className="sticky bottom-0 p-4 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800">
+            <div className="sticky bottom-0 p-4 bg-background border-t">
               <Button className="w-full" onClick={onClose}>
                 Show Results
               </Button>

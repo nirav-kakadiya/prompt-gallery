@@ -97,7 +97,21 @@ export const usePreferencesStore = create<PreferencesStore>()(
       defaultPromptType: "text-to-image",
       compactView: false,
 
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => {
+        set({ theme });
+        // Apply theme immediately
+        if (typeof window !== "undefined") {
+          const isDark =
+            theme === "dark" ||
+            (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (isDark) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+          localStorage.setItem("theme", theme);
+        }
+      },
       setDefaultPromptType: (type) => set({ defaultPromptType: type }),
       setCompactView: (compact) => set({ compactView: compact }),
     }),

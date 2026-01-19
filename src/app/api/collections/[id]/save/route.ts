@@ -11,12 +11,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: { code: "UNAUTHORIZED", message: "Please sign in" } },
+        { status: 401 }
+      );
     }
 
     const { id } = await params;
 
-    // Check if collection exists and is public
+    // Single query to check collection exists, is public, and not owned by user
     const collection = await prisma.collection.findUnique({
       where: { id },
       select: { id: true, isPublic: true, ownerId: true },
@@ -24,76 +27,45 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!collection) {
       return NextResponse.json(
-        { error: "Collection not found" },
+        { success: false, error: { code: "NOT_FOUND", message: "Collection not found" } },
         { status: 404 }
       );
     }
 
-    // Can't save your own collection
     if (collection.ownerId === user.id) {
       return NextResponse.json(
-        { error: "You cannot save your own collection" },
+        { success: false, error: { code: "BAD_REQUEST", message: "You cannot save your own collection" } },
         { status: 400 }
       );
     }
 
-    // Must be public to save
     if (!collection.isPublic) {
       return NextResponse.json(
-        { error: "This collection is private" },
+        { success: false, error: { code: "FORBIDDEN", message: "This collection is private" } },
         { status: 403 }
       );
     }
 
-    try {
-      // Check if already saved
-      const existing = await prisma.savedCollection.findUnique({
-        where: {
-          userId_collectionId: {
-            userId: user.id,
-            collectionId: id,
-          },
-        },
-      });
-
-      if (existing) {
-        return NextResponse.json(
-          { error: "Collection already saved" },
-          { status: 400 }
-        );
-      }
-
-      // Save the collection
-      await prisma.savedCollection.create({
-        data: {
+    // Use upsert to handle race conditions - single atomic operation
+    await prisma.savedCollection.upsert({
+      where: {
+        userId_collectionId: {
           userId: user.id,
           collectionId: id,
         },
-      });
+      },
+      create: {
+        userId: user.id,
+        collectionId: id,
+      },
+      update: {}, // No update needed, just prevent duplicate error
+    });
 
-      // Try to increment saveCount if the field exists
-      try {
-        await prisma.collection.update({
-          where: { id },
-          data: { saveCount: { increment: 1 } },
-        });
-      } catch {
-        // saveCount field might not exist yet
-      }
-
-      return NextResponse.json({ success: true, saved: true });
-    } catch (error) {
-      // SavedCollection table might not exist yet
-      console.error("Save collection error:", error);
-      return NextResponse.json(
-        { error: "Save feature not available yet. Please restart the server." },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({ success: true, saved: true });
   } catch (error) {
     console.error("Failed to save collection:", error);
     return NextResponse.json(
-      { error: "Failed to save collection" },
+      { success: false, error: { code: "INTERNAL_ERROR", message: "Failed to save collection" } },
       { status: 500 }
     );
   }
@@ -104,62 +76,34 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: { code: "UNAUTHORIZED", message: "Please sign in" } },
+        { status: 401 }
+      );
     }
 
     const { id } = await params;
 
-    try {
-      // Check if saved
-      const existing = await prisma.savedCollection.findUnique({
-        where: {
-          userId_collectionId: {
-            userId: user.id,
-            collectionId: id,
-          },
-        },
-      });
+    // Use deleteMany to avoid error if not exists - single atomic operation
+    const result = await prisma.savedCollection.deleteMany({
+      where: {
+        userId: user.id,
+        collectionId: id,
+      },
+    });
 
-      if (!existing) {
-        return NextResponse.json(
-          { error: "Collection not saved" },
-          { status: 400 }
-        );
-      }
-
-      // Unsave the collection
-      await prisma.savedCollection.delete({
-        where: {
-          userId_collectionId: {
-            userId: user.id,
-            collectionId: id,
-          },
-        },
-      });
-
-      // Try to decrement saveCount if the field exists
-      try {
-        await prisma.collection.update({
-          where: { id },
-          data: { saveCount: { decrement: 1 } },
-        });
-      } catch {
-        // saveCount field might not exist yet
-      }
-
-      return NextResponse.json({ success: true, saved: false });
-    } catch (error) {
-      // SavedCollection table might not exist yet
-      console.error("Unsave collection error:", error);
+    if (result.count === 0) {
       return NextResponse.json(
-        { error: "Save feature not available yet. Please restart the server." },
-        { status: 500 }
+        { success: false, error: { code: "NOT_FOUND", message: "Collection was not saved" } },
+        { status: 404 }
       );
     }
+
+    return NextResponse.json({ success: true, saved: false });
   } catch (error) {
     console.error("Failed to unsave collection:", error);
     return NextResponse.json(
-      { error: "Failed to unsave collection" },
+      { success: false, error: { code: "INTERNAL_ERROR", message: "Failed to unsave collection" } },
       { status: 500 }
     );
   }

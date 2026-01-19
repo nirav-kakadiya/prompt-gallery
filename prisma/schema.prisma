@@ -153,7 +153,6 @@ model Collection {
   isPublic      Boolean  @default(true)
   ownerId       String
   promptCount   Int      @default(0)
-  saveCount     Int      @default(0) // How many users saved this collection
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -163,7 +162,7 @@ model Collection {
   savedBy       SavedCollection[]
 
   @@index([isPublic])
-  @@index([saveCount])
+  @@index([ownerId])
 }
 
 // Saved Collections - tracks which users have saved which public collections

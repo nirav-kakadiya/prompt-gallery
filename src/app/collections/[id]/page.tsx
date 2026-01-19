@@ -186,12 +186,12 @@ export default function CollectionDetailPage() {
               </Link>
               {" · "}
               {collection._count.prompts} {collection._count.prompts === 1 ? "prompt" : "prompts"}
-              {(collection.saveCount ?? 0) > 0 && (
+              {(collection._count?.savedBy ?? 0) > 0 && (
                 <>
                   {" · "}
                   <span className="inline-flex items-center gap-1">
                     <Users className="w-3 h-3" />
-                    {collection.saveCount} {collection.saveCount === 1 ? "save" : "saves"}
+                    {collection._count.savedBy} {collection._count.savedBy === 1 ? "save" : "saves"}
                   </span>
                 </>
               )}

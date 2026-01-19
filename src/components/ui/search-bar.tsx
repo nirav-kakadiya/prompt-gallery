@@ -113,14 +113,12 @@ export function SearchBar({
       <div
         className={cn(
           "relative flex items-center rounded-xl transition-all duration-300",
-          "bg-white border border-neutral-200/80 shadow-sm",
-          "dark:bg-neutral-900 dark:border-neutral-800/80",
-          isFocused && "ring-2 ring-neutral-900/10 border-neutral-300 shadow-md",
-          isFocused && "dark:ring-neutral-50/10 dark:border-neutral-700",
+          "bg-secondary border border-input",
+          isFocused && "ring-2 ring-ring/20 border-ring/50",
           sizeClasses[size]
         )}
       >
-        <div className="absolute left-4 text-neutral-400 pointer-events-none">
+        <div className="absolute left-4 text-muted-foreground pointer-events-none">
           {isLoading ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
@@ -143,8 +141,7 @@ export function SearchBar({
           autoFocus={autoFocus}
           className={cn(
             "w-full bg-transparent pl-12 pr-10 outline-none",
-            "text-neutral-900 placeholder:text-neutral-400",
-            "dark:text-neutral-50 dark:placeholder:text-neutral-500",
+            "text-foreground placeholder:text-muted-foreground",
             sizeClasses[size]
           )}
         />
@@ -161,7 +158,7 @@ export function SearchBar({
                 variant="ghost"
                 size="icon-sm"
                 onClick={handleClear}
-                className="h-7 w-7 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -177,21 +174,13 @@ export function SearchBar({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={cn(
-              "absolute z-50 w-full mt-2 py-2 rounded-xl border shadow-lg",
-              "bg-white border-neutral-200/60",
-              "dark:bg-neutral-900 dark:border-neutral-800/60"
-            )}
+            className="absolute z-50 w-full mt-2 py-2 rounded-xl border bg-popover text-popover-foreground shadow-lg"
           >
             {suggestions.map((suggestion, index) => (
               <button
                 key={index}
                 onClick={() => handleSuggestionClick(suggestion)}
-                className={cn(
-                  "w-full px-4 py-2 text-left text-sm transition-colors",
-                  "hover:bg-neutral-100 dark:hover:bg-neutral-800",
-                  "text-neutral-700 dark:text-neutral-300"
-                )}
+                className="w-full px-4 py-2 text-left text-sm transition-colors hover:bg-accent"
               >
                 <Search className="inline-block h-4 w-4 mr-2 opacity-50" />
                 {suggestion}

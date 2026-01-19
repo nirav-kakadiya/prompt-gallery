@@ -36,7 +36,7 @@ interface PromptCardProps {
     promptText: string;
     type: PromptType;
     thumbnailUrl: string | null;
-    imageUrl?: string | null; // Fallback if thumbnailUrl is not set
+    imageUrl?: string | null;
     blurhash: string | null;
     tags: string[];
     author: {
@@ -76,34 +76,24 @@ export function PromptCard({
   const [showAddToCollectionModal, setShowAddToCollectionModal] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [imageLoaded, setImageLoaded] = React.useState(false);
-  
-  // Check if current user owns this prompt
+
   const isOwner = user?.id === prompt.author?.id;
 
-  // Reset image states when prompt changes
   React.useEffect(() => {
     setImageError(false);
     setImageLoaded(false);
   }, [prompt.id, prompt.thumbnailUrl, prompt.imageUrl]);
 
-  // Get type config with fallback to default
   const typeConfig = PROMPT_TYPES[prompt.type] || PROMPT_TYPES["text-to-image"];
-
-  // Use thumbnailUrl with fallback to imageUrl
   const displayImageUrl = prompt.thumbnailUrl || prompt.imageUrl || null;
 
-  // Handle tags that might be a string (JSON), array of strings, or array of tag objects
   const tags: string[] = React.useMemo(() => {
     if (Array.isArray(prompt.tags)) {
-      // Handle both string tags and tag objects {id, name, slug}
       return prompt.tags.map((tag) => {
-        if (typeof tag === 'string') {
-          return tag;
-        }
+        if (typeof tag === 'string') return tag;
         if (typeof tag === 'object' && tag !== null) {
-          // Extract name from tag object
-          return (tag as { name?: string; id?: string; slug?: string }).name || 
-                 (tag as { id?: string }).id || 
+          return (tag as { name?: string; id?: string; slug?: string }).name ||
+                 (tag as { id?: string }).id ||
                  String(tag);
         }
         return String(tag);
@@ -114,12 +104,10 @@ export function PromptCard({
         const parsed = JSON.parse(prompt.tags || '[]');
         if (Array.isArray(parsed)) {
           return parsed.map((tag) => {
-            if (typeof tag === 'string') {
-              return tag;
-            }
+            if (typeof tag === 'string') return tag;
             if (typeof tag === 'object' && tag !== null) {
-              return (tag as { name?: string; id?: string }).name || 
-                     (tag as { id?: string }).id || 
+              return (tag as { name?: string; id?: string }).name ||
+                     (tag as { id?: string }).id ||
                      String(tag);
             }
             return String(tag);
@@ -136,10 +124,8 @@ export function PromptCard({
   const handleCopy = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     setIsCopying(true);
     const success = await copyToClipboard(prompt.promptText);
-
     if (success) {
       setCopyCount((prev) => prev + 1);
       toast.success("Prompt copied to clipboard!", {
@@ -148,18 +134,14 @@ export function PromptCard({
       });
       onCopy?.(prompt.id);
     } else {
-      toast.error("Failed to copy", {
-        description: "Please try again",
-      });
+      toast.error("Failed to copy", { description: "Please try again" });
     }
-
     setTimeout(() => setIsCopying(false), 500);
   };
 
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     setIsLiked(!isLiked);
     setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
     onLike?.(prompt.id);
@@ -168,9 +150,7 @@ export function PromptCard({
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     const url = `${window.location.origin}/prompts/${prompt.slug}`;
-
     if (navigator.share) {
       try {
         await navigator.share({
@@ -178,9 +158,7 @@ export function PromptCard({
           text: prompt.promptText.slice(0, 100) + "...",
           url,
         });
-      } catch {
-        // User cancelled or share failed
-      }
+      } catch {}
     } else {
       await copyToClipboard(url);
       toast.success("Link copied to clipboard!");
@@ -190,18 +168,11 @@ export function PromptCard({
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    // Confirm deletion
     const confirmed = window.confirm(
       `Are you sure you want to delete "${prompt.title}"? This action cannot be undone.`
     );
-
-    if (!confirmed) {
-      return;
-    }
-
+    if (!confirmed) return;
     setIsDeleting(true);
-
     try {
       await deletePromptMutation.mutateAsync(prompt.id);
       toast.success("Prompt deleted successfully", {
@@ -210,28 +181,14 @@ export function PromptCard({
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to delete prompt";
-      
-      // Handle different error codes
       if (errorMessage.includes("UNAUTHORIZED")) {
-        toast.error("Authentication required", {
-          description: "Please log in to delete prompts",
-          duration: 4000,
-        });
+        toast.error("Authentication required", { description: "Please log in to delete prompts" });
       } else if (errorMessage.includes("FORBIDDEN")) {
-        toast.error("Permission denied", {
-          description: "You can only delete your own prompts",
-          duration: 4000,
-        });
+        toast.error("Permission denied", { description: "You can only delete your own prompts" });
       } else if (errorMessage.includes("NOT_FOUND")) {
-        toast.error("Prompt not found", {
-          description: "This prompt may have already been deleted",
-          duration: 4000,
-        });
+        toast.error("Prompt not found", { description: "This prompt may have already been deleted" });
       } else {
-        toast.error("Failed to delete prompt", {
-          description: errorMessage.replace(/^[^:]+:\s*/, ""),
-          duration: 4000,
-        });
+        toast.error("Failed to delete prompt", { description: errorMessage.replace(/^[^:]+:\s*/, "") });
       }
     } finally {
       setIsDeleting(false);
@@ -261,20 +218,17 @@ export function PromptCard({
         >
           <div
             className={cn(
-              "relative overflow-hidden rounded-2xl border border-neutral-200/60 bg-white",
+              "relative overflow-hidden rounded-2xl border bg-card",
               "shadow-sm transition-all duration-300",
-              "hover:shadow-xl hover:shadow-neutral-200/40 hover:border-neutral-300/60",
-              "dark:border-neutral-800/60 dark:bg-neutral-900",
-              "dark:hover:shadow-neutral-900/40 dark:hover:border-neutral-700/60"
+              "hover:shadow-lg hover:border-border/80"
             )}
           >
             {/* Image Container */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+            <div className="relative aspect-[4/3] overflow-hidden bg-muted">
               {displayImageUrl && !imageError ? (
                 <>
-                  {/* Loading placeholder */}
                   {!imageLoaded && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 animate-pulse">
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
                       <div className="text-4xl opacity-30">
                         {typeConfig?.icon === "Image" && "🖼️"}
                         {typeConfig?.icon === "Video" && "🎬"}
@@ -283,7 +237,6 @@ export function PromptCard({
                       </div>
                     </div>
                   )}
-                  {/* Use regular img for external images to avoid CORS/optimization issues */}
                   {displayImageUrl.includes("pbs.twimg.com") ||
                    displayImageUrl.includes("i.redd.it") ||
                    displayImageUrl.includes("preview.redd.it") ||
@@ -297,10 +250,7 @@ export function PromptCard({
                         !imageLoaded && "opacity-0"
                       )}
                       onLoad={() => setImageLoaded(true)}
-                      onError={() => {
-                        console.error("Failed to load image:", displayImageUrl);
-                        setImageError(true);
-                      }}
+                      onError={() => setImageError(true)}
                       loading={priority ? "eager" : "lazy"}
                       referrerPolicy="no-referrer"
                     />
@@ -317,15 +267,12 @@ export function PromptCard({
                       )}
                       priority={priority}
                       onLoad={() => setImageLoaded(true)}
-                      onError={() => {
-                        console.error("Failed to load image:", displayImageUrl);
-                        setImageError(true);
-                      }}
+                      onError={() => setImageError(true)}
                     />
                   )}
                 </>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900">
+                <div className="absolute inset-0 flex items-center justify-center bg-muted">
                   <div className="text-4xl opacity-30">
                     {typeConfig?.icon === "Image" && "🖼️"}
                     {typeConfig?.icon === "Video" && "🎬"}
@@ -348,7 +295,7 @@ export function PromptCard({
               <div className="absolute left-3 top-3">
                 <Badge
                   variant={prompt.type as PromptType}
-                  className="backdrop-blur-md bg-white/90 dark:bg-neutral-900/90 shadow-sm"
+                  className="backdrop-blur-md bg-background/90 shadow-sm"
                 >
                   {typeConfig?.label || "Prompt"}
                 </Badge>
@@ -367,7 +314,7 @@ export function PromptCard({
                     <Button
                       variant="secondary"
                       size="icon-sm"
-                      className="bg-white/90 backdrop-blur-md hover:bg-white shadow-sm"
+                      className="bg-background/90 backdrop-blur-md hover:bg-background shadow-sm"
                       onClick={handleCopy}
                     >
                       <Copy
@@ -386,7 +333,7 @@ export function PromptCard({
                     <Button
                       variant="secondary"
                       size="icon-sm"
-                      className="bg-white/90 backdrop-blur-md hover:bg-white shadow-sm"
+                      className="bg-background/90 backdrop-blur-md hover:bg-background shadow-sm"
                       onClick={(e) => e.preventDefault()}
                     >
                       <MoreHorizontal className="h-4 w-4" />
@@ -436,7 +383,7 @@ export function PromptCard({
                         <DropdownMenuItem
                           onClick={handleDelete}
                           disabled={isDeleting}
-                          className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-red-950/20"
+                          className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           {isDeleting ? "Deleting..." : "Delete prompt"}
@@ -471,7 +418,7 @@ export function PromptCard({
             {/* Content */}
             <div className="p-4 space-y-3">
               {/* Title */}
-              <h3 className="font-semibold text-neutral-900 dark:text-neutral-50 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <h3 className="font-semibold line-clamp-1 group-hover:text-primary transition-colors">
                 {prompt.title}
               </h3>
 
@@ -487,12 +434,12 @@ export function PromptCard({
                         }}
                         size="sm"
                       />
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400 truncate">
+                      <span className="text-sm text-muted-foreground truncate">
                         {prompt.author.name || prompt.author.username || "Anonymous"}
                       </span>
                     </>
                   ) : (
-                    <span className="text-sm text-neutral-500 dark:text-neutral-500">
+                    <span className="text-sm text-muted-foreground">
                       Anonymous
                     </span>
                   )}
@@ -507,12 +454,8 @@ export function PromptCard({
                   )}
                   onClick={handleLike}
                 >
-                  <Heart
-                    className={cn("h-4 w-4", isLiked && "fill-current")}
-                  />
-                  <span className="sr-only">
-                    {isLiked ? "Unlike" : "Like"}
-                  </span>
+                  <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
+                  <span className="sr-only">{isLiked ? "Unlike" : "Like"}</span>
                 </Button>
               </div>
 
@@ -524,7 +467,7 @@ export function PromptCard({
                       key={`${tag}-${index}`}
                       variant="secondary"
                       size="sm"
-                      className="cursor-pointer hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                      className="cursor-pointer hover:bg-accent transition-colors"
                     >
                       {tag}
                     </Badge>
@@ -572,29 +515,29 @@ export function PromptCard({
 // Skeleton component for loading state
 export function PromptCardSkeleton() {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-neutral-200/60 bg-white dark:border-neutral-800/60 dark:bg-neutral-900">
+    <div className="relative overflow-hidden rounded-2xl border bg-card">
       {/* Image skeleton */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted animate-pulse" />
 
       {/* Content skeleton */}
       <div className="p-4 space-y-3">
         {/* Title skeleton */}
-        <div className="h-5 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+        <div className="h-5 bg-muted rounded animate-pulse" />
 
         {/* Author skeleton */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-            <div className="h-4 w-24 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+            <div className="w-6 h-6 rounded-full bg-muted animate-pulse" />
+            <div className="h-4 w-24 bg-muted rounded animate-pulse" />
           </div>
-          <div className="w-8 h-8 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+          <div className="w-8 h-8 bg-muted rounded animate-pulse" />
         </div>
 
         {/* Tags skeleton */}
         <div className="flex gap-1.5">
-          <div className="h-5 w-16 bg-neutral-200 dark:bg-neutral-700 rounded-full animate-pulse" />
-          <div className="h-5 w-14 bg-neutral-200 dark:bg-neutral-700 rounded-full animate-pulse" />
-          <div className="h-5 w-18 bg-neutral-200 dark:bg-neutral-700 rounded-full animate-pulse" />
+          <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
+          <div className="h-5 w-14 bg-muted rounded-full animate-pulse" />
+          <div className="h-5 w-18 bg-muted rounded-full animate-pulse" />
         </div>
       </div>
     </div>
