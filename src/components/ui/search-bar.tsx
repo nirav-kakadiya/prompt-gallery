@@ -112,17 +112,17 @@ export function SearchBar({
     <div ref={containerRef} className={cn("relative w-full", className)}>
       <div
         className={cn(
-          "relative flex items-center rounded-xl transition-all duration-300",
-          "bg-secondary border border-input",
-          isFocused && "ring-2 ring-ring/20 border-ring/50",
+          "relative flex items-center rounded-full transition-all duration-500",
+          "bg-muted/30 border border-border/40 backdrop-blur-md",
+          isFocused && "bg-background border-primary/40 shadow-2xl shadow-primary/5",
           sizeClasses[size]
         )}
       >
-        <div className="absolute left-4 text-muted-foreground pointer-events-none">
+        <div className="absolute left-5 text-muted-foreground/40 pointer-events-none">
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Search className="h-5 w-5" />
+            <Search className="h-4 w-4" />
           )}
         </div>
 
@@ -140,8 +140,8 @@ export function SearchBar({
           placeholder={placeholder}
           autoFocus={autoFocus}
           className={cn(
-            "w-full bg-transparent pl-12 pr-10 outline-none",
-            "text-foreground placeholder:text-muted-foreground",
+            "w-full bg-transparent pl-12 pr-12 outline-none font-medium",
+            "text-foreground placeholder:text-muted-foreground/30",
             sizeClasses[size]
           )}
         />
@@ -158,9 +158,9 @@ export function SearchBar({
                 variant="ghost"
                 size="icon-sm"
                 onClick={handleClear}
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                className="h-8 w-8 rounded-full text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-colors"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </Button>
             </motion.div>
           )}
@@ -171,18 +171,18 @@ export function SearchBar({
       <AnimatePresence>
         {showSuggestions && suggestions.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute z-50 w-full mt-2 py-2 rounded-xl border bg-popover text-popover-foreground shadow-lg"
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute z-50 w-full mt-3 py-3 rounded-2xl border-border/40 bg-background text-popover-foreground shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] backdrop-blur-xl"
           >
             {suggestions.map((suggestion, index) => (
               <button
                 key={index}
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="w-full px-4 py-2 text-left text-sm transition-colors hover:bg-accent"
+                className="w-full px-5 py-2.5 text-left text-sm font-bold tracking-tight transition-colors hover:bg-primary/5 hover:text-primary"
               >
-                <Search className="inline-block h-4 w-4 mr-2 opacity-50" />
+                <Search className="inline-block h-3.5 w-3.5 mr-3 opacity-30" />
                 {suggestion}
               </button>
             ))}

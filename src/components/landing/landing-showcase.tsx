@@ -90,20 +90,20 @@ export function LandingShowcase() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10">
           {/* Column 1 */}
           <div className="md:col-span-4 space-y-10">
-            <ShowcaseItem item={prompts[0]} speed={-0.1} />
-            <ShowcaseItem item={prompts[1]} speed={0.15} />
+            <ShowcaseItem item={prompts[0]} speed={-0.1} index={0} />
+            <ShowcaseItem item={prompts[1]} speed={0.15} index={1} />
           </div>
           
           {/* Column 2 - offset */}
           <div className="md:col-span-4 space-y-10 md:pt-32">
-            <ShowcaseItem item={prompts[2]} speed={-0.2} />
-            <ShowcaseItem item={prompts[3]} speed={0.05} />
+            <ShowcaseItem item={prompts[2]} speed={-0.2} index={2} />
+            <ShowcaseItem item={prompts[3]} speed={0.05} index={3} />
           </div>
           
           {/* Column 3 */}
           <div className="md:col-span-4 space-y-10">
-            <ShowcaseItem item={prompts[4]} speed={-0.05} />
-            <ShowcaseItem item={prompts[5]} speed={0.2} />
+            <ShowcaseItem item={prompts[4]} speed={-0.05} index={4} />
+            <ShowcaseItem item={prompts[5]} speed={0.2} index={5} />
           </div>
         </div>
       </div>
@@ -114,7 +114,7 @@ export function LandingShowcase() {
   );
 }
 
-function ShowcaseItem({ item, speed }: { item: typeof prompts[0]; speed: number }) {
+function ShowcaseItem({ item, speed, index }: { item: typeof prompts[0]; speed: number; index: number }) {
   return (
     <motion.div 
       className="showcase-item group relative" 
@@ -141,7 +141,7 @@ function ShowcaseItem({ item, speed }: { item: typeof prompts[0]; speed: number 
       </div>
       <div className="mt-6 flex justify-between items-center px-4">
          <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/40">
-           Ref. 0{Math.floor(Math.random() * 9) + 1}
+           Ref. 0{index + 1}
          </span>
          <div className="w-8 h-[1px] bg-border/50" />
       </div>

@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Header } from "./header";
 import { Footer } from "./footer";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -19,17 +21,20 @@ export function PageLayout({
   showFooter = true,
 }: PageLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main
+      <motion.main
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
-          "flex-1 pt-28 md:pt-32",
-          !fullWidth && "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full",
+          "flex-1 pt-28 md:pt-32 pb-20",
+          !fullWidth && "w-full px-6 sm:px-10 lg:px-12 xl:px-16",
           className
         )}
       >
         {children}
-      </main>
+      </motion.main>
       {showFooter && <Footer />}
     </div>
   );
@@ -52,37 +57,42 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("py-8 sm:py-12", className)}>
+    <div className={cn("py-12 sm:py-20", className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="mb-4">
-          <ol className="flex items-center gap-2 text-sm text-muted-foreground">
+        <nav className="mb-6">
+          <ol className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
             {breadcrumbs.map((crumb, index) => (
               <React.Fragment key={index}>
-                {index > 0 && <span>/</span>}
+                {index > 0 && <span className="text-border">/</span>}
                 {crumb.href ? (
-                  <a
+                  <Link
                     href={crumb.href}
-                    className="hover:text-foreground transition-colors"
+                    className="hover:text-primary transition-colors"
                   >
                     {crumb.label}
-                  </a>
+                  </Link>
                 ) : (
-                  <span className="text-foreground">{crumb.label}</span>
+                  <span className="text-muted-foreground/60">{crumb.label}</span>
                 )}
               </React.Fragment>
             ))}
           </ol>
         </nav>
       )}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-bold">{title}</h1>
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-10">
+        <div className="max-w-3xl">
+          <h1 className="text-5xl md:text-7xl font-black tracking-[-0.04em] leading-[0.9] mb-6">
+            {title.toUpperCase()}
+          </h1>
           {description && (
-            <p className="mt-2 text-lg text-muted-foreground">{description}</p>
+            <p className="text-lg md:text-xl text-muted-foreground/60 font-medium leading-relaxed max-w-2xl">
+              {description}
+            </p>
           )}
         </div>
-        {actions && <div className="flex items-center gap-3">{actions}</div>}
+        {actions && <div className="flex items-center gap-4 shrink-0">{actions}</div>}
       </div>
+      <div className="mt-16 w-full h-[1px] bg-border/40" />
     </div>
   );
 }

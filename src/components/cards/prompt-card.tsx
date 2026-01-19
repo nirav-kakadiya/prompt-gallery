@@ -9,6 +9,7 @@ import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/avatar";
+import { Magnetic } from "@/components/landing/magnetic";
 import {
   Tooltip,
   TooltipContent,
@@ -318,89 +319,95 @@ export function PromptCard({
               {/* Action buttons overlay */}
               <div
                 className={cn(
-                  "absolute right-3 top-3 flex items-center gap-1.5",
-                  "opacity-0 transition-all duration-300",
-                  isHovered && "opacity-100"
+                  "absolute right-4 top-4 flex items-center gap-2",
+                  "opacity-0 translate-y-[-10px] transition-all duration-500 ease-[0.16,1,0.3,1]",
+                  isHovered && "opacity-100 translate-y-0"
                 )}
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      size="icon-sm"
-                      className="bg-background/90 backdrop-blur-md hover:bg-background shadow-sm"
-                      onClick={handleCopy}
-                    >
-                      <Copy
-                        className={cn(
-                          "h-4 w-4 transition-transform",
-                          isCopying && "scale-110"
-                        )}
-                      />
-                    </Button>
+                    <Magnetic>
+                      <Button
+                        variant="secondary"
+                        size="icon-sm"
+                        className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-9 w-9 rounded-xl"
+                        onClick={handleCopy}
+                      >
+                        <Copy
+                          className={cn(
+                            "h-3.5 w-3.5 transition-transform",
+                            isCopying && "scale-110"
+                          )}
+                        />
+                      </Button>
+                    </Magnetic>
                   </TooltipTrigger>
-                  <TooltipContent>Copy prompt</TooltipContent>
+                  <TooltipContent side="top" className="text-[10px] font-black uppercase tracking-widest">Copy</TooltipContent>
                 </Tooltip>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      size="icon-sm"
-                      className="bg-background/90 backdrop-blur-md hover:bg-background shadow-sm"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <Magnetic>
+                      <Button
+                        variant="secondary"
+                        size="icon-sm"
+                        className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-9 w-9 rounded-xl"
+                        onClick={(e) => e.preventDefault()}
+                      >
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </Button>
+                    </Magnetic>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleCopy}>
-                      <Copy className="mr-2 h-4 w-4" />
-                      Copy prompt
+                  <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-border/40 shadow-2xl">
+                    <DropdownMenuItem onClick={handleCopy} className="rounded-lg py-2.5">
+                      <Copy className="mr-3 h-4 w-4 opacity-50" />
+                      <span className="text-sm font-bold">Copy prompt</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleShare}>
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Share
+                    <DropdownMenuItem onClick={handleShare} className="rounded-lg py-2.5">
+                      <Share2 className="mr-3 h-4 w-4 opacity-50" />
+                      <span className="text-sm font-bold">Share link</span>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
+                    <DropdownMenuSeparator className="my-2" />
+                    <DropdownMenuItem asChild className="rounded-lg py-2.5">
                       <Link href={`/prompts/${prompt.slug}`}>
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        View details
+                        <ExternalLink className="mr-3 h-4 w-4 opacity-50" />
+                        <span className="text-sm font-bold">View details</span>
                       </Link>
                     </DropdownMenuItem>
                     {user && (
                       <DropdownMenuItem
+                        className="rounded-lg py-2.5"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           setShowAddToCollectionModal(true);
                         }}
                       >
-                        <FolderPlus className="mr-2 h-4 w-4" />
-                        Save to collection
+                        <FolderPlus className="mr-3 h-4 w-4 opacity-50" />
+                        <span className="text-sm font-bold">Save to collection</span>
                       </DropdownMenuItem>
                     )}
                     {isOwner && (
                       <>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator className="my-2" />
                         <DropdownMenuItem
+                          className="rounded-lg py-2.5"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             setShowEditModal(true);
                           }}
                         >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit prompt
+                          <Pencil className="mr-3 h-4 w-4 opacity-50" />
+                          <span className="text-sm font-bold">Edit prompt</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={handleDelete}
                           disabled={isDeleting}
-                          className="text-destructive focus:text-destructive"
+                          className="text-destructive focus:text-destructive rounded-lg py-2.5"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {isDeleting ? "Deleting..." : "Delete prompt"}
+                          <Trash2 className="mr-3 h-4 w-4 opacity-50" />
+                          <span className="text-sm font-bold">{isDeleting ? "Deleting..." : "Delete prompt"}</span>
                         </DropdownMenuItem>
                       </>
                     )}

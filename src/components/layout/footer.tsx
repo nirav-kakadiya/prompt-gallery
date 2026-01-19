@@ -51,33 +51,31 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="border-t bg-muted/30">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+    <footer className="border-t bg-background py-24">
+      <div className="w-full px-6 sm:px-10 lg:px-12 xl:px-16">
         {/* Main footer content */}
-        <div className="py-12 lg:py-16 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-12 lg:gap-20">
           {/* Brand column */}
-          <div className="col-span-2 md:col-span-4 lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="relative w-8 h-8">
-                <div className="absolute inset-0 bg-primary/20 rounded-lg rotate-6" />
-                <div className="absolute inset-0 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-                  <Sparkles className="w-5 h-5 text-primary-foreground" />
-                </div>
+          <div className="col-span-2 lg:col-span-2">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <span className="font-bold text-lg">Prompt Gallery</span>
+              <span className="font-black text-lg tracking-[-0.05em] uppercase">
+                Prompt<span className="text-muted-foreground/40">Lab</span>
+              </span>
             </Link>
-            <p className="mt-4 text-sm text-muted-foreground">
-              The ultimate library for AI prompts. Discover, share, and create stunning
-              AI-generated content with our curated collection.
+            <p className="mt-8 text-sm text-muted-foreground/60 leading-relaxed font-medium max-w-xs">
+              The premium library for AI engineering. Architecting the future of creative intelligence, one prompt at a time.
             </p>
-            <div className="mt-6 flex items-center gap-4">
+            <div className="mt-10 flex items-center gap-6">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg bg-background hover:bg-secondary transition-colors"
+                  className="text-muted-foreground/40 hover:text-primary transition-colors"
                   aria-label={social.label}
                 >
                   <social.icon className="w-5 h-5" />
@@ -88,14 +86,16 @@ export function Footer() {
 
           {/* Link columns */}
           {Object.entries(footerLinks).map(([key, section]) => (
-            <div key={key}>
-              <h3 className="font-semibold text-sm mb-4">{section.title}</h3>
-              <ul className="space-y-3">
+            <div key={key} className="col-span-1">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground mb-8">
+                {section.title}
+              </h3>
+              <ul className="space-y-4">
                 {section.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      className="text-sm font-medium text-muted-foreground/60 hover:text-primary transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -107,13 +107,15 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="py-6 border-t flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Prompt Gallery. All rights reserved.
+        <div className="mt-24 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+            &copy; {new Date().getFullYear()} PromptLab Intelligence Systems.
           </p>
-          <p className="text-sm text-muted-foreground flex items-center gap-1">
-            Made with <Heart className="w-4 h-4 text-destructive fill-destructive" /> by creators, for creators
-          </p>
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+            <span>Crafted with</span>
+            <Heart className="w-3 h-3 text-primary fill-primary" />
+            <span>by Creators</span>
+          </div>
         </div>
       </div>
     </footer>

@@ -10,6 +10,7 @@ import { useInfinitePrompts } from "@/hooks/use-prompts";
 import { useFilterStore, useUIStore, usePreferencesStore } from "@/store";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
+import { Magnetic } from "@/components/landing/magnetic";
 import {
   Tooltip,
   TooltipContent,
@@ -58,7 +59,7 @@ export function GallerySection() {
               >
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold">Filters</h3>
+                    <h3 className="text-[12px] font-black uppercase tracking-widest">Filters</h3>
                     <Button variant="ghost" size="sm" onClick={toggleSidebar}>
                       Close
                     </Button>
@@ -70,10 +71,10 @@ export function GallerySection() {
           )}
         </AnimatePresence>
 
-        <div className="flex gap-8 xl:gap-12">
+        <div className="flex gap-8 xl:gap-16">
           {/* Sidebar (desktop) */}
           <aside className="hidden lg:block w-60 shrink-0">
-            <div className="sticky top-28 h-[calc(100vh-8rem)] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="sticky top-32 h-[calc(100vh-8rem)] overflow-y-auto pr-4 no-scrollbar">
               <FiltersSidebar />
             </div>
           </aside>
@@ -81,17 +82,23 @@ export function GallerySection() {
           {/* Main content */}
           <div className="flex-1 min-w-0">
             {/* Content header - matches Filters sidebar header height */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <p className="text-sm text-muted-foreground order-2 sm:order-1">
-                {isLoading
-                  ? "Loading prompts..."
-                  : `${prompts.length} prompts found`}
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
+              <div className="order-2 sm:order-1 overflow-hidden">
+                <motion.p 
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40"
+                >
+                  {isLoading
+                    ? "Initializing Lab..."
+                    : `${prompts.length} verified results`}
+                </motion.p>
+              </div>
 
-              <div className="flex items-center justify-between sm:justify-end gap-2 order-1 sm:order-2 w-full sm:w-auto">
+              <div className="flex items-center justify-between sm:justify-end gap-3 order-1 sm:order-2 w-full sm:w-auto">
                 {/* View mode toggle */}
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/50 border backdrop-blur-sm overflow-hidden shrink-0">
-                  <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-muted/30 border border-border/40 backdrop-blur-md overflow-hidden shrink-0">
+                  <div className="flex items-center gap-1 px-1">
                     {[
                       { mode: "grid", icon: LayoutGrid, label: "Grid" },
                       { mode: "masonry", icon: Columns2, label: "Masonry" },
@@ -100,20 +107,22 @@ export function GallerySection() {
                     ].map((item) => (
                       <Tooltip key={item.mode}>
                         <TooltipTrigger asChild>
-                          <button
-                            onClick={() => setViewMode(item.mode as any)}
-                            className={cn(
-                              "p-2 rounded-lg transition-all duration-200",
-                              viewMode === item.mode
-                                ? "bg-background shadow-sm text-primary scale-110"
-                                : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                            )}
-                            aria-label={`${item.label} view`}
-                          >
-                            <item.icon className="w-4 h-4" />
-                          </button>
+                          <Magnetic>
+                            <button
+                              onClick={() => setViewMode(item.mode as any)}
+                              className={cn(
+                                "p-2 rounded-xl transition-all duration-300 relative",
+                                viewMode === item.mode
+                                  ? "text-primary bg-background shadow-lg shadow-primary/5"
+                                  : "text-muted-foreground/60 hover:text-foreground"
+                              )}
+                              aria-label={`${item.label} view`}
+                            >
+                              <item.icon className="w-4 h-4" />
+                            </button>
+                          </Magnetic>
                         </TooltipTrigger>
-                        <TooltipContent side="top">{item.label} view</TooltipContent>
+                        <TooltipContent side="top" className="text-[10px] font-black uppercase tracking-widest">{item.label}</TooltipContent>
                       </Tooltip>
                     ))}
                   </div>
@@ -124,10 +133,10 @@ export function GallerySection() {
                         initial={{ opacity: 0, width: 0 }}
                         animate={{ opacity: 1, width: "auto" }}
                         exit={{ opacity: 0, width: 0 }}
-                        className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 border-l ml-1 h-6 overflow-hidden"
+                        className="flex items-center gap-4 px-4 border-l border-border/40 ml-1 h-6 overflow-hidden"
                       >
-                        <span className="hidden min-[450px]:inline text-[10px] font-black uppercase tracking-tighter text-muted-foreground/40 whitespace-nowrap">
-                          Size
+                        <span className="hidden min-[450px]:inline text-[9px] font-black uppercase tracking-widest text-muted-foreground/30 whitespace-nowrap">
+                          Grid Size
                         </span>
                         <input
                           type="range"
@@ -136,9 +145,9 @@ export function GallerySection() {
                           step="1"
                           value={gridColumns}
                           onChange={(e) => setGridColumns(parseInt(e.target.value))}
-                          className="w-12 min-[400px]:w-16 sm:w-20 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary hover:accent-primary/80 transition-all"
+                          className="w-16 min-[400px]:w-20 sm:w-24 h-1 bg-muted-foreground/10 rounded-full appearance-none cursor-pointer accent-primary"
                         />
-                        <div className="flex items-center justify-center w-5 h-5 rounded bg-primary/10 text-[11px] font-bold text-primary shrink-0">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-primary/5 text-[10px] font-black text-primary">
                           {gridColumns}
                         </div>
                       </motion.div>
@@ -152,12 +161,12 @@ export function GallerySection() {
                     variant="outline"
                     size="sm"
                     onClick={toggleSidebar}
-                    className="lg:hidden h-10 px-3"
+                    className="lg:hidden h-11 px-4 rounded-xl border-border/40 font-bold text-xs"
                   >
                     <SlidersHorizontal className="w-4 h-4" />
-                    <span className="hidden min-[450px]:inline ml-2 text-xs font-semibold">Filters</span>
+                    <span className="hidden min-[450px]:inline ml-2">Filters</span>
                     {hasActiveFilters && (
-                      <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
+                      <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-black">
                         {types.length + tags.length + (query ? 1 : 0)}
                       </span>
                     )}
@@ -165,9 +174,12 @@ export function GallerySection() {
 
                   {/* Clear filters */}
                   {hasActiveFilters && (
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="hidden sm:flex">
-                      Clear
-                    </Button>
+                    <button 
+                      onClick={clearFilters} 
+                      className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-primary transition-colors px-4"
+                    >
+                      Reset
+                    </button>
                   )}
                 </div>
               </div>

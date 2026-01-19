@@ -4,6 +4,7 @@ import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuthStore, fetchCurrentUser } from "@/hooks/use-auth";
+import { SmoothScroll } from "@/components/landing/smooth-scroll";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -79,7 +80,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeScript />
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={300}>
-          <AuthInitializer>{children}</AuthInitializer>
+          <SmoothScroll>
+            <AuthInitializer>{children}</AuthInitializer>
+          </SmoothScroll>
         </TooltipProvider>
       </QueryClientProvider>
     </>
