@@ -431,60 +431,44 @@ export function PromptCard({
 
             {/* Content */}
             <div className={cn(
-              "flex flex-col justify-between flex-1",
-              isCompact ? "p-3 space-y-2" : "p-4 space-y-3"
+              "flex flex-col flex-1",
+              isCompact ? "p-2.5 pb-2 gap-2" : "p-4 space-y-3"
             )}>
-              <div className="space-y-2">
+              <div className={cn("flex flex-col", isCompact ? "gap-1.5" : "gap-2")}>
                 {/* Title */}
                 <h3 className={cn(
-                  "font-semibold transition-colors line-clamp-1 group-hover:text-primary",
-                  isCompact ? "text-sm" : "text-base"
+                  "font-bold transition-colors group-hover:text-primary leading-[1.2]",
+                  isCompact ? "text-[13px] line-clamp-2 min-h-[2.1rem]" : "text-base line-clamp-1"
                 )}>
                   {prompt.title}
                 </h3>
 
-                {/* Author and like */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {prompt.author ? (
-                      <>
-                        <UserAvatar
-                          user={{
-                            name: prompt.author.name,
-                            image: prompt.author.image,
-                          }}
-                          size={isCompact ? "xs" : "sm"}
-                        />
-                        <span className={cn(
-                          "text-muted-foreground truncate",
-                          isCompact ? "text-[11px]" : "text-sm"
-                        )}>
-                          {prompt.author.name || prompt.author.username || "Anonymous"}
-                        </span>
-                      </>
-                    ) : (
+                {/* Author */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {prompt.author ? (
+                    <>
+                      <UserAvatar
+                        user={{
+                          name: prompt.author.name,
+                          image: prompt.author.image,
+                        }}
+                        size={isCompact ? "xs" : "sm"}
+                        className="shrink-0"
+                      />
                       <span className={cn(
-                        "text-muted-foreground",
-                        isCompact ? "text-[11px]" : "text-sm"
+                        "text-muted-foreground truncate font-medium",
+                        isCompact ? "text-[10px]" : "text-sm"
                       )}>
-                        Anonymous
+                        {prompt.author.name || prompt.author.username || "Anonymous"}
                       </span>
-                    )}
-                  </div>
-
-                  {!isCompact && (
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className={cn(
-                        "shrink-0 transition-all",
-                        isLiked && "text-red-500 hover:text-red-600"
-                      )}
-                      onClick={handleLike}
-                    >
-                      <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
-                      <span className="sr-only">{isLiked ? "Unlike" : "Like"}</span>
-                    </Button>
+                    </>
+                  ) : (
+                    <span className={cn(
+                      "text-muted-foreground font-medium",
+                      isCompact ? "text-[10px]" : "text-sm"
+                    )}>
+                      Anonymous
+                    </span>
                   )}
                 </div>
               </div>
@@ -510,18 +494,53 @@ export function PromptCard({
                 </div>
               )}
               
-              {isCompact && (
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-medium pt-1">
-                  <span className="flex items-center gap-1">
-                    <Heart className={cn("h-2.5 w-2.5", isLiked && "fill-current text-red-500")} />
-                    {formatNumber(prompt.likeCount)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Copy className="h-2.5 w-2.5" />
-                    {formatNumber(copyCount)}
-                  </span>
-                </div>
-              )}
+              <div className="mt-auto">
+                {!isCompact && (
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
+                      <span className="flex items-center gap-1">
+                        <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current text-destructive")} />
+                        {formatNumber(prompt.likeCount)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Copy className="h-3.5 w-3.5" />
+                        {formatNumber(copyCount)}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className={cn(
+                        "shrink-0 transition-all",
+                        isLiked && "text-red-500 hover:text-red-600"
+                      )}
+                      onClick={handleLike}
+                    >
+                      <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
+                      <span className="sr-only">{isLiked ? "Unlike" : "Like"}</span>
+                    </Button>
+                  </div>
+                )}
+
+                {isCompact && (
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground/50 font-bold border-t border-border/40 pt-2 mt-1">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-0.5">
+                        <Heart className={cn("h-2.5 w-2.5", isLiked && "fill-current text-destructive")} />
+                        {formatNumber(prompt.likeCount)}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <Eye className="h-2.5 w-2.5" />
+                        {formatNumber(prompt.viewCount || 0)}
+                      </span>
+                    </div>
+                    <span className="flex items-center gap-0.5">
+                      <Copy className="h-2.5 w-2.5" />
+                      {formatNumber(copyCount)}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </Link>
@@ -574,22 +593,33 @@ export function PromptCardSkeleton({ viewMode = "grid" }: { viewMode?: "grid" | 
       {/* Content skeleton */}
       <div className={cn(
         "flex-1",
-        isCompact ? "p-3 space-y-2" : "p-4 space-y-3"
+        isCompact ? "p-2.5 space-y-2" : "p-4 space-y-3"
       )}>
         {/* Title skeleton */}
-        <div className={cn("bg-muted rounded animate-pulse", isCompact ? "h-4 w-2/3" : "h-5 w-3/4")} />
+        <div className="space-y-1">
+          <div className={cn("bg-muted rounded animate-pulse", isCompact ? "h-3.5 w-full" : "h-5 w-3/4")} />
+          {isCompact && <div className="bg-muted rounded animate-pulse h-3.5 w-2/3" />}
+        </div>
 
         {/* Author skeleton */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={cn("rounded-full bg-muted animate-pulse", isCompact ? "w-4 h-4" : "w-6 h-6")} />
-            <div className={cn("bg-muted rounded animate-pulse", isCompact ? "h-3 w-16" : "h-4 w-24")} />
+            <div className={cn("bg-muted rounded animate-pulse", isCompact ? "h-3 w-12" : "h-4 w-24")} />
           </div>
           {!isCompact && <div className="w-8 h-8 bg-muted rounded animate-pulse" />}
         </div>
 
-        {/* Tags skeleton */}
-        {!isCompact && (
+        {/* Tags/Footer skeleton */}
+        {isCompact ? (
+          <div className="flex items-center justify-between pt-2 border-t border-border/40">
+            <div className="flex gap-2">
+              <div className="h-2 w-6 bg-muted rounded animate-pulse" />
+              <div className="h-2 w-6 bg-muted rounded animate-pulse" />
+            </div>
+            <div className="h-2 w-6 bg-muted rounded animate-pulse" />
+          </div>
+        ) : (
           <div className="flex gap-1.5">
             <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
             <div className="h-5 w-14 bg-muted rounded-full animate-pulse" />

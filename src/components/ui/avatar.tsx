@@ -53,10 +53,11 @@ interface UserAvatarProps {
     image?: string | null;
   };
   className?: string;
-  size?: "sm" | "default" | "lg" | "xl";
+  size?: "xs" | "sm" | "default" | "lg" | "xl";
 }
 
 const sizeClasses = {
+  xs: "h-4 w-4 text-[8px]",
   sm: "h-6 w-6 text-xs",
   default: "h-10 w-10 text-sm",
   lg: "h-12 w-12 text-base",

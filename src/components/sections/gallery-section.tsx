@@ -29,6 +29,7 @@ export function GallerySection() {
   const { query, types, tags, clearFilters } = useFilterStore();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
   const [viewMode, setViewMode] = React.useState<"grid" | "list" | "masonry" | "compact">("masonry");
+  const [gridColumns, setGridColumns] = React.useState(3);
 
   const hasActiveFilters = query || types.length > 0 || tags.length > 0;
 
@@ -81,64 +82,95 @@ export function GallerySection() {
           {/* Main content */}
           <div className="flex-1 min-w-0">
             {/* Content header - matches Filters sidebar header height */}
-            <div className="flex items-center justify-between mb-5">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <p className="text-sm text-muted-foreground order-2 sm:order-1">
                 {isLoading
                   ? "Loading prompts..."
                   : `${prompts.length} prompts found`}
               </p>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between sm:justify-end gap-2 order-1 sm:order-2 w-full sm:w-auto">
                 {/* View mode toggle */}
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/50 border backdrop-blur-sm">
-                  {[
-                    { mode: "grid", icon: LayoutGrid, label: "Grid" },
-                    { mode: "masonry", icon: Columns2, label: "Masonry" },
-                    { mode: "compact", icon: Grid3X3, label: "Compact" },
-                    { mode: "list", icon: List, label: "List" },
-                  ].map((item) => (
-                    <Tooltip key={item.mode}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => setViewMode(item.mode as any)}
-                          className={cn(
-                            "p-2 rounded-lg transition-all duration-200",
-                            viewMode === item.mode
-                              ? "bg-background shadow-sm text-primary scale-110"
-                              : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                          )}
-                          aria-label={`${item.label} view`}
-                        >
-                          <item.icon className="w-4 h-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">{item.label} view</TooltipContent>
-                    </Tooltip>
-                  ))}
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/50 border backdrop-blur-sm overflow-hidden shrink-0">
+                  <div className="flex items-center gap-1">
+                    {[
+                      { mode: "grid", icon: LayoutGrid, label: "Grid" },
+                      { mode: "masonry", icon: Columns2, label: "Masonry" },
+                      { mode: "compact", icon: Grid3X3, label: "Compact" },
+                      { mode: "list", icon: List, label: "List" },
+                    ].map((item) => (
+                      <Tooltip key={item.mode}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => setViewMode(item.mode as any)}
+                            className={cn(
+                              "p-2 rounded-lg transition-all duration-200",
+                              viewMode === item.mode
+                                ? "bg-background shadow-sm text-primary scale-110"
+                                : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                            )}
+                            aria-label={`${item.label} view`}
+                          >
+                            <item.icon className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">{item.label} view</TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </div>
+
+                  <AnimatePresence>
+                    {viewMode === "grid" && (
+                      <motion.div
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 border-l ml-1 h-6 overflow-hidden"
+                      >
+                        <span className="hidden min-[450px]:inline text-[10px] font-black uppercase tracking-tighter text-muted-foreground/40 whitespace-nowrap">
+                          Size
+                        </span>
+                        <input
+                          type="range"
+                          min="2"
+                          max="6"
+                          step="1"
+                          value={gridColumns}
+                          onChange={(e) => setGridColumns(parseInt(e.target.value))}
+                          className="w-12 min-[400px]:w-16 sm:w-20 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary hover:accent-primary/80 transition-all"
+                        />
+                        <div className="flex items-center justify-center w-5 h-5 rounded bg-primary/10 text-[11px] font-bold text-primary shrink-0">
+                          {gridColumns}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                {/* Filter toggle (mobile) */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleSidebar}
-                  className="lg:hidden"
-                >
-                  <SlidersHorizontal className="w-4 h-4 mr-2" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                      {types.length + tags.length + (query ? 1 : 0)}
-                    </span>
-                  )}
-                </Button>
-
-                {/* Clear filters */}
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    Clear all
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Filter toggle (mobile) */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSidebar}
+                    className="lg:hidden h-10 px-3"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    <span className="hidden min-[450px]:inline ml-2 text-xs font-semibold">Filters</span>
+                    {hasActiveFilters && (
+                      <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
+                        {types.length + tags.length + (query ? 1 : 0)}
+                      </span>
+                    )}
                   </Button>
-                )}
+
+                  {/* Clear filters */}
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="hidden sm:flex">
+                      Clear
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -159,12 +191,18 @@ export function GallerySection() {
                   viewMode === "masonry"
                     ? "columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-6 space-y-6 block"
                     : "grid gap-6",
-                  viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
+                  viewMode === "grid" && (
+                    gridColumns === 2 ? "grid-cols-1 sm:grid-cols-2" :
+                    gridColumns === 3 ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" :
+                    gridColumns === 4 ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" :
+                    gridColumns === 5 ? "grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" :
+                    "grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
+                  ),
                   viewMode === "compact" && "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4",
                   viewMode === "list" && "grid-cols-1"
                 )}
               >
-                {Array.from({ length: viewMode === "compact" ? 12 : 12 }).map((_, i) => (
+                {Array.from({ length: viewMode === "compact" || gridColumns > 4 ? 16 : 12 }).map((_, i) => (
                   <PromptCardSkeleton key={i} viewMode={viewMode} />
                 ))}
               </div>
@@ -193,7 +231,13 @@ export function GallerySection() {
                     viewMode === "masonry"
                       ? "columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-6 space-y-6 block"
                       : "grid gap-6",
-                    viewMode === "grid" && "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
+                    viewMode === "grid" && (
+                      gridColumns === 2 ? "grid-cols-1 sm:grid-cols-2" :
+                      gridColumns === 3 ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" :
+                      gridColumns === 4 ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" :
+                      gridColumns === 5 ? "grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" :
+                      "grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
+                    ),
                     viewMode === "compact" && "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4",
                     viewMode === "list" && "grid-cols-1"
                   )}
