@@ -417,21 +417,21 @@ export default function SubmitPage() {
                       "relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer",
                       isSelected
                         ? `${config.borderColor} ${config.bgColor} ring-2 ring-offset-2 ring-offset-background ${config.ringColor}`
-                        : "border-border hover:border-muted-foreground/50 hover:bg-muted/30"
+                        : "border-input hover:bg-accent hover:text-accent-foreground"
                     )}
                   >
                     {isSelected && (
                       <div className={cn(
-                        "absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center",
+                        "absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center shadow-sm",
                         config.color
                       )}>
                         <Check className="w-3 h-3 text-white" />
                       </div>
                     )}
-                    <Icon className={cn("w-6 h-6", config.textColor)} />
+                    <Icon className={cn("w-6 h-6", isSelected ? config.textColor : "text-muted-foreground")} />
                     <span className={cn(
                       "text-sm font-medium",
-                      isSelected && config.textColor
+                      isSelected ? config.textColor : "text-muted-foreground"
                     )}>{config.label}</span>
                   </button>
                 );
@@ -452,7 +452,7 @@ export default function SubmitPage() {
                 setFormData({ ...formData, promptText: e.target.value })
               }
               rows={6}
-              className="w-full px-4 py-3 rounded-xl border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-4 py-3 rounded-xl border border-input bg-background resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary text-foreground"
               required
             />
             <p className="mt-1 text-xs text-muted-foreground">
@@ -532,7 +532,7 @@ export default function SubmitPage() {
                 <button
                   type="button"
                   onClick={clearMedia}
-                  className="absolute top-2 right-2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                  className="absolute top-2 right-2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -697,11 +697,11 @@ export default function SubmitPage() {
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className="cursor-pointer"
+                      className="cursor-pointer group"
                       onClick={() => handleRemoveTag(tag)}
                     >
                       {tag}
-                      <span className="ml-1">&times;</span>
+                      <X className="ml-1 h-3 w-3 group-hover:text-destructive transition-colors" />
                     </Badge>
                   ))}
                 </div>
@@ -718,7 +718,7 @@ export default function SubmitPage() {
                       <Badge
                         key={tag}
                         variant="outline"
-                        className="cursor-pointer hover:bg-secondary"
+                        className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
                         onClick={() => handleAddTag(tag)}
                       >
                         + {tag}
