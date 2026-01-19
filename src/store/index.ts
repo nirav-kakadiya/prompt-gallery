@@ -98,7 +98,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
       theme: "system",
       defaultPromptType: "text-to-image",
       viewMode: "masonry",
-      gridColumns: 3,
+      gridColumns: 4,
 
       setTheme: (theme) => {
         set({ theme });
