@@ -55,6 +55,7 @@ interface PromptCardProps {
   onLike?: (promptId: string) => void;
   onClick?: (promptId: string) => void;
   priority?: boolean;
+  viewMode?: "grid" | "list" | "compact" | "masonry";
 }
 
 export function PromptCard({
@@ -63,6 +64,7 @@ export function PromptCard({
   onLike,
   onClick,
   priority = false,
+  viewMode = "grid",
 }: PromptCardProps) {
   const { user } = useAuthStore();
   const deletePromptMutation = useDeletePrompt();
@@ -195,6 +197,10 @@ export function PromptCard({
     }
   };
 
+  const isList = viewMode === "list";
+  const isCompact = viewMode === "compact";
+  const isMasonry = viewMode === "masonry";
+
   return (
     <TooltipProvider>
       <motion.article
@@ -202,7 +208,7 @@ export function PromptCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         whileHover={{ y: -4 }}
-        className="group relative"
+        className={cn("group relative", isList && "w-full")}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -220,11 +226,15 @@ export function PromptCard({
             className={cn(
               "relative overflow-hidden rounded-2xl border bg-card",
               "shadow-sm transition-all duration-300",
-              "hover:shadow-lg hover:border-border/80"
+              "hover:shadow-lg hover:border-border/80",
+              isList && "flex flex-row items-stretch"
             )}
           >
             {/* Image Container */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+            <div className={cn(
+              "relative overflow-hidden bg-muted",
+              isList ? "w-48 sm:w-64 shrink-0" : isMasonry ? "h-auto min-h-[150px]" : "aspect-4/3"
+            )}>
               {displayImageUrl && !imageError ? (
                 <>
                   {!imageLoaded && (
@@ -245,7 +255,8 @@ export function PromptCard({
                       src={displayImageUrl}
                       alt={prompt.title}
                       className={cn(
-                        "absolute inset-0 w-full h-full object-contain transition-all duration-500",
+                        isMasonry ? "w-full h-auto" : "absolute inset-0 w-full h-full object-cover",
+                        "transition-all duration-500",
                         isHovered && "scale-105",
                         !imageLoaded && "opacity-0"
                       )}
@@ -255,24 +266,26 @@ export function PromptCard({
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <Image
-                      src={displayImageUrl}
-                      alt={prompt.title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className={cn(
-                        "object-contain transition-all duration-500",
-                        isHovered && "scale-105",
-                        !imageLoaded && "opacity-0"
-                      )}
-                      priority={priority}
-                      onLoad={() => setImageLoaded(true)}
-                      onError={() => setImageError(true)}
-                    />
+                    <div className={cn(isMasonry ? "relative" : "absolute inset-0")}>
+                      <Image
+                        src={displayImageUrl}
+                        alt={prompt.title}
+                        {...(isMasonry ? { width: 500, height: 500, style: { width: '100%', height: 'auto' } } : { fill: true })}
+                        sizes={isList ? "256px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
+                        className={cn(
+                          "object-cover transition-all duration-500",
+                          isHovered && "scale-105",
+                          !imageLoaded && "opacity-0"
+                        )}
+                        priority={priority}
+                        onLoad={() => setImageLoaded(true)}
+                        onError={() => setImageError(true)}
+                      />
+                    </div>
                   )}
                 </>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                <div className={cn("flex items-center justify-center bg-muted", isMasonry ? "h-40" : "absolute inset-0")}>
                   <div className="text-4xl opacity-30">
                     {typeConfig?.icon === "Image" && "🖼️"}
                     {typeConfig?.icon === "Video" && "🎬"}
@@ -285,7 +298,7 @@ export function PromptCard({
               {/* Overlay gradient */}
               <div
                 className={cn(
-                  "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent",
+                  "absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent",
                   "opacity-0 transition-opacity duration-300",
                   isHovered && "opacity-100"
                 )}
@@ -296,6 +309,7 @@ export function PromptCard({
                 <Badge
                   variant={prompt.type as PromptType}
                   className="backdrop-blur-md bg-background/90 shadow-sm"
+                  size={isCompact ? "sm" : "default"}
                 >
                   {typeConfig?.label || "Prompt"}
                 </Badge>
@@ -416,53 +430,69 @@ export function PromptCard({
             </div>
 
             {/* Content */}
-            <div className="p-4 space-y-3">
-              {/* Title */}
-              <h3 className="font-semibold line-clamp-1 group-hover:text-primary transition-colors">
-                {prompt.title}
-              </h3>
+            <div className={cn(
+              "flex flex-col justify-between flex-1",
+              isCompact ? "p-3 space-y-2" : "p-4 space-y-3"
+            )}>
+              <div className="space-y-2">
+                {/* Title */}
+                <h3 className={cn(
+                  "font-semibold transition-colors line-clamp-1 group-hover:text-primary",
+                  isCompact ? "text-sm" : "text-base"
+                )}>
+                  {prompt.title}
+                </h3>
 
-              {/* Author and like */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  {prompt.author ? (
-                    <>
-                      <UserAvatar
-                        user={{
-                          name: prompt.author.name,
-                          image: prompt.author.image,
-                        }}
-                        size="sm"
-                      />
-                      <span className="text-sm text-muted-foreground truncate">
-                        {prompt.author.name || prompt.author.username || "Anonymous"}
+                {/* Author and like */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {prompt.author ? (
+                      <>
+                        <UserAvatar
+                          user={{
+                            name: prompt.author.name,
+                            image: prompt.author.image,
+                          }}
+                          size={isCompact ? "xs" : "sm"}
+                        />
+                        <span className={cn(
+                          "text-muted-foreground truncate",
+                          isCompact ? "text-[11px]" : "text-sm"
+                        )}>
+                          {prompt.author.name || prompt.author.username || "Anonymous"}
+                        </span>
+                      </>
+                    ) : (
+                      <span className={cn(
+                        "text-muted-foreground",
+                        isCompact ? "text-[11px]" : "text-sm"
+                      )}>
+                        Anonymous
                       </span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      Anonymous
-                    </span>
+                    )}
+                  </div>
+
+                  {!isCompact && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className={cn(
+                        "shrink-0 transition-all",
+                        isLiked && "text-red-500 hover:text-red-600"
+                      )}
+                      onClick={handleLike}
+                    >
+                      <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
+                      <span className="sr-only">{isLiked ? "Unlike" : "Like"}</span>
+                    </Button>
                   )}
                 </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className={cn(
-                    "shrink-0 transition-all",
-                    isLiked && "text-red-500 hover:text-red-600"
-                  )}
-                  onClick={handleLike}
-                >
-                  <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
-                  <span className="sr-only">{isLiked ? "Unlike" : "Like"}</span>
-                </Button>
               </div>
 
               {/* Tags */}
-              {tags.length > 0 && (
+              {tags.length > 0 && !isCompact && (
                 <div className="flex flex-wrap gap-1.5">
-                  {tags.slice(0, 3).map((tag, index) => (
+                  {tags.slice(0, isList ? 6 : 2).map((tag, index) => (
                     <Badge
                       key={`${tag}-${index}`}
                       variant="secondary"
@@ -472,11 +502,24 @@ export function PromptCard({
                       {tag}
                     </Badge>
                   ))}
-                  {tags.length > 3 && (
+                  {tags.length > (isList ? 6 : 2) && (
                     <Badge variant="outline" size="sm">
-                      +{tags.length - 3}
+                      +{tags.length - (isList ? 6 : 2)}
                     </Badge>
                   )}
+                </div>
+              )}
+              
+              {isCompact && (
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-medium pt-1">
+                  <span className="flex items-center gap-1">
+                    <Heart className={cn("h-2.5 w-2.5", isLiked && "fill-current text-red-500")} />
+                    {formatNumber(prompt.likeCount)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Copy className="h-2.5 w-2.5" />
+                    {formatNumber(copyCount)}
+                  </span>
                 </div>
               )}
             </div>
@@ -513,32 +556,45 @@ export function PromptCard({
 }
 
 // Skeleton component for loading state
-export function PromptCardSkeleton() {
+export function PromptCardSkeleton({ viewMode = "grid" }: { viewMode?: "grid" | "list" | "compact" | "masonry" }) {
+  const isList = viewMode === "list";
+  const isCompact = viewMode === "compact";
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border bg-card">
+    <div className={cn(
+      "relative overflow-hidden rounded-2xl border bg-card",
+      isList && "flex flex-row items-stretch h-32"
+    )}>
       {/* Image skeleton */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted animate-pulse" />
+      <div className={cn(
+        "relative overflow-hidden bg-muted animate-pulse",
+        isList ? "w-48 sm:w-64 shrink-0" : "aspect-4/3"
+      )} />
 
       {/* Content skeleton */}
-      <div className="p-4 space-y-3">
+      <div className={cn(
+        "flex-1",
+        isCompact ? "p-3 space-y-2" : "p-4 space-y-3"
+      )}>
         {/* Title skeleton */}
-        <div className="h-5 bg-muted rounded animate-pulse" />
+        <div className={cn("bg-muted rounded animate-pulse", isCompact ? "h-4 w-2/3" : "h-5 w-3/4")} />
 
         {/* Author skeleton */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-muted animate-pulse" />
-            <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+            <div className={cn("rounded-full bg-muted animate-pulse", isCompact ? "w-4 h-4" : "w-6 h-6")} />
+            <div className={cn("bg-muted rounded animate-pulse", isCompact ? "h-3 w-16" : "h-4 w-24")} />
           </div>
-          <div className="w-8 h-8 bg-muted rounded animate-pulse" />
+          {!isCompact && <div className="w-8 h-8 bg-muted rounded animate-pulse" />}
         </div>
 
         {/* Tags skeleton */}
-        <div className="flex gap-1.5">
-          <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
-          <div className="h-5 w-14 bg-muted rounded-full animate-pulse" />
-          <div className="h-5 w-18 bg-muted rounded-full animate-pulse" />
-        </div>
+        {!isCompact && (
+          <div className="flex gap-1.5">
+            <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
+            <div className="h-5 w-14 bg-muted rounded-full animate-pulse" />
+          </div>
+        )}
       </div>
     </div>
   );

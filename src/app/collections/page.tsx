@@ -79,201 +79,203 @@ export default function CollectionsPage() {
   if (!isAuthenticated && !authLoading) return null;
 
   return (
-    <PageLayout>
-      <PageHeader
-        title="Collections"
-        description="Organize and discover prompt collections"
-        actions={
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/collections/discover">
-                <Compass className="w-4 h-4 mr-2" />
-                Discover
-              </Link>
-            </Button>
-            <Button onClick={() => setShowCreateModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Collection
-            </Button>
-          </div>
-        }
-      />
-
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit mb-8">
-        <button
-          onClick={() => setActiveTab("my")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-            activeTab === "my"
-              ? "bg-background shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <FolderOpen className="w-4 h-4" />
-          My Collections
-          {myCollections && myCollections.length > 0 && (
-            <span className="text-xs bg-muted-foreground/20 px-1.5 rounded">
-              {myCollections.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("saved")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-            activeTab === "saved"
-              ? "bg-background shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Bookmark className="w-4 h-4" />
-          Saved
-          {savedCollections && savedCollections.length > 0 && (
-            <span className="text-xs bg-muted-foreground/20 px-1.5 rounded">
-              {savedCollections.length}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Loading state */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && (!collections || collections.length === 0) && (
-        <EmptyState
-          icon={
-            activeTab === "my" ? (
-              <Folder className="w-8 h-8 text-muted-foreground" />
-            ) : (
-              <Bookmark className="w-8 h-8 text-muted-foreground" />
-            )
-          }
-          title={activeTab === "my" ? "No collections yet" : "No saved collections"}
-          description={
-            activeTab === "my"
-              ? "Create your first collection to organize your favorite prompts"
-              : "Discover and save public collections from the community"
-          }
-          action={
-            activeTab === "my" ? (
-              <Button onClick={() => setShowCreateModal(true)}>
-                Create Collection
-              </Button>
-            ) : (
-              <Button asChild>
+    <PageLayout fullWidth>
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+        <PageHeader
+          title="Collections"
+          description="Organize and discover prompt collections"
+          actions={
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
                 <Link href="/collections/discover">
                   <Compass className="w-4 h-4 mr-2" />
-                  Discover Collections
+                  Discover
                 </Link>
               </Button>
-            )
+              <Button onClick={() => setShowCreateModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Collection
+              </Button>
+            </div>
           }
         />
-      )}
 
-      {/* Collections grid */}
-      {!isLoading && collections && collections.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-16">
-          {collections.map((collection, index) => (
-            <motion.div
-              key={collection.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Link href={`/collections/${collection.id}`}>
-                <div className="group p-6 rounded-2xl border bg-card hover:shadow-lg transition-all">
-                  {/* Cover image or thumbnails */}
-                  <div className="aspect-video rounded-xl bg-muted mb-4 overflow-hidden relative">
-                    {collection.prompts && collection.prompts.length > 0 ? (
-                      <div className="grid grid-cols-2 grid-rows-2 w-full h-full gap-0.5">
-                        {collection.prompts.slice(0, 4).map((p) => (
-                          <div key={p.prompt.id} className="bg-muted-foreground/10">
-                            {p.prompt.imageUrl ? (
-                              <img
-                                src={p.prompt.imageUrl}
-                                alt=""
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <ImageIcon className="w-6 h-6 text-muted-foreground/50" />
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {Array.from({ length: Math.max(0, 4 - collection.prompts.length) }).map(
-                          (_, i) => (
-                            <div
-                              key={`empty-${i}`}
-                              className="bg-muted-foreground/10 flex items-center justify-center"
-                            >
-                              <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit mb-8">
+          <button
+            onClick={() => setActiveTab("my")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+              activeTab === "my"
+                ? "bg-background shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <FolderOpen className="w-4 h-4" />
+            My Collections
+            {myCollections && myCollections.length > 0 && (
+              <span className="text-xs bg-muted-foreground/20 px-1.5 rounded">
+                {myCollections.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("saved")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+              activeTab === "saved"
+                ? "bg-background shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Bookmark className="w-4 h-4" />
+            Saved
+            {savedCollections && savedCollections.length > 0 && (
+              <span className="text-xs bg-muted-foreground/20 px-1.5 rounded">
+                {savedCollections.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && (!collections || collections.length === 0) && (
+          <EmptyState
+            icon={
+              activeTab === "my" ? (
+                <Folder className="w-8 h-8 text-muted-foreground" />
+              ) : (
+                <Bookmark className="w-8 h-8 text-muted-foreground" />
+              )
+            }
+            title={activeTab === "my" ? "No collections yet" : "No saved collections"}
+            description={
+              activeTab === "my"
+                ? "Create your first collection to organize your favorite prompts"
+                : "Discover and save public collections from the community"
+            }
+            action={
+              activeTab === "my" ? (
+                <Button onClick={() => setShowCreateModal(true)}>
+                  Create Collection
+                </Button>
+              ) : (
+                <Button asChild>
+                  <Link href="/collections/discover">
+                    <Compass className="w-4 h-4 mr-2" />
+                    Discover Collections
+                  </Link>
+                </Button>
+              )
+            }
+          />
+        )}
+
+        {/* Collections grid */}
+        {!isLoading && collections && collections.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-16">
+            {collections.map((collection, index) => (
+              <motion.div
+                key={collection.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Link href={`/collections/${collection.id}`}>
+                  <div className="group p-6 rounded-2xl border bg-card hover:shadow-lg transition-all">
+                    {/* Cover image or thumbnails */}
+                    <div className="aspect-video rounded-xl bg-muted mb-4 overflow-hidden relative">
+                      {collection.prompts && collection.prompts.length > 0 ? (
+                        <div className="grid grid-cols-2 grid-rows-2 w-full h-full gap-0.5">
+                          {collection.prompts.slice(0, 4).map((p) => (
+                            <div key={p.prompt.id} className="bg-muted-foreground/10">
+                              {p.prompt.imageUrl ? (
+                                <img
+                                  src={p.prompt.imageUrl}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <ImageIcon className="w-6 h-6 text-muted-foreground/50" />
+                                </div>
+                              )}
                             </div>
-                          )
-                        )}
-                      </div>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Folder className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold group-hover:text-primary transition-colors truncate">
-                        {collection.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {collection._count?.prompts || 0} prompts
-                      </p>
-                      {collection.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {collection.description}
-                        </p>
-                      )}
-                      {/* Show owner for saved collections */}
-                      {activeTab === "saved" && "owner" in collection && collection.owner && (
-                        <div className="flex items-center gap-2 mt-2">
-                          {collection.owner.image ? (
-                            <img
-                              src={collection.owner.image}
-                              alt=""
-                              className="w-4 h-4 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-4 h-4 rounded-full bg-muted" />
+                          ))}
+                          {Array.from({ length: Math.max(0, 4 - collection.prompts.length) }).map(
+                            (_, i) => (
+                              <div
+                                key={`empty-${i}`}
+                                className="bg-muted-foreground/10 flex items-center justify-center"
+                              >
+                                <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
+                              </div>
+                            )
                           )}
-                          <span className="text-xs text-muted-foreground">
-                            by {collection.owner.name || collection.owner.username || "Anonymous"}
-                          </span>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Folder className="w-12 h-12 text-muted-foreground" />
                         </div>
                       )}
                     </div>
-                    <div
-                      className="ml-2 flex-shrink-0"
-                      title={collection.isPublic ? "Public" : "Private"}
-                    >
-                      {collection.isPublic ? (
-                        <Globe className="w-4 h-4 text-muted-foreground" />
-                      ) : (
-                        <Lock className="w-4 h-4 text-muted-foreground" />
-                      )}
+
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold group-hover:text-primary transition-colors truncate">
+                          {collection.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {collection._count?.prompts || 0} prompts
+                        </p>
+                        {collection.description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {collection.description}
+                          </p>
+                        )}
+                        {/* Show owner for saved collections */}
+                        {activeTab === "saved" && "owner" in collection && collection.owner && (
+                          <div className="flex items-center gap-2 mt-2">
+                            {collection.owner.image ? (
+                              <img
+                                src={collection.owner.image}
+                                alt=""
+                                className="w-4 h-4 rounded-full"
+                              />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full bg-muted" />
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              by {collection.owner.name || collection.owner.username || "Anonymous"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className="ml-2 flex-shrink-0"
+                        title={collection.isPublic ? "Public" : "Private"}
+                      >
+                        {collection.isPublic ? (
+                          <Globe className="w-4 h-4 text-muted-foreground" />
+                        ) : (
+                          <Lock className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-      )}
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Create Collection Modal */}
       <AnimatePresence>
@@ -283,14 +285,14 @@ export default function CollectionsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50"
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
               onClick={() => setShowCreateModal(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-background rounded-2xl p-6 z-50 shadow-xl"
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-background rounded-2xl p-6 z-50 shadow-xl border"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold">Create Collection</h2>

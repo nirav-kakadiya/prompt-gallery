@@ -31,47 +31,49 @@ export default function CategoriesPage() {
   });
 
   return (
-    <PageLayout>
-      <PageHeader
-        title="Categories"
-        description="Browse prompts by category to find exactly what you're looking for"
-      />
-
-      {/* Loading state */}
-      {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-16">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <CategoryCardSkeleton key={i} />
-          ))}
-        </div>
-      )}
-
-      {/* Error state */}
-      {error && (
-        <EmptyState
-          icon={<Layers className="w-8 h-8 text-muted-foreground" />}
-          title="Failed to load categories"
-          description="Something went wrong. Please try again later."
+    <PageLayout fullWidth>
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+        <PageHeader
+          title="Categories"
+          description="Browse prompts by category to find exactly what you're looking for"
         />
-      )}
 
-      {/* Empty state */}
-      {!isLoading && !error && categories?.length === 0 && (
-        <EmptyState
-          icon={<Layers className="w-8 h-8 text-muted-foreground" />}
-          title="No categories yet"
-          description="Categories will appear here as prompts are added."
-        />
-      )}
+        {/* Loading state */}
+        {isLoading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-16">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <CategoryCardSkeleton key={i} />
+            ))}
+          </div>
+        )}
 
-      {/* Categories grid */}
-      {!isLoading && !error && categories && categories.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-16">
-          {categories.map((category, index) => (
-            <CategoryCard key={category.id} category={category} index={index} />
-          ))}
-        </div>
-      )}
+        {/* Error state */}
+        {error && (
+          <EmptyState
+            icon={<Layers className="w-8 h-8 text-muted-foreground" />}
+            title="Failed to load categories"
+            description="Something went wrong. Please try again later."
+          />
+        )}
+
+        {/* Empty state */}
+        {!isLoading && !error && categories?.length === 0 && (
+          <EmptyState
+            icon={<Layers className="w-8 h-8 text-muted-foreground" />}
+            title="No categories yet"
+            description="Categories will appear here as prompts are added."
+          />
+        )}
+
+        {/* Categories grid */}
+        {!isLoading && !error && categories && categories.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-16">
+            {categories.map((category, index) => (
+              <CategoryCard key={category.id} category={category} index={index} />
+            ))}
+          </div>
+        )}
+      </div>
     </PageLayout>
   );
 }

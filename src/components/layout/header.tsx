@@ -114,7 +114,7 @@ export function Header({ onSearch }: HeaderProps) {
           : "bg-background/80 backdrop-blur-sm"
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
