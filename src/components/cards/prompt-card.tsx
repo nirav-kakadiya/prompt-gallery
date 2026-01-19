@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2 } from "lucide-react";
+import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2, Pencil } from "lucide-react";
 import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import { useAuthStore } from "@/hooks/use-auth";
 import { useDeletePrompt } from "@/hooks/use-prompts";
+import { EditPromptModal } from "@/components/prompts/edit-prompt-modal";
 
 interface PromptCardProps {
   prompt: {
@@ -70,6 +71,7 @@ export function PromptCard({
   const [isHovered, setIsHovered] = React.useState(false);
   const [isCopying, setIsCopying] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [showEditModal, setShowEditModal] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [imageLoaded, setImageLoaded] = React.useState(false);
   
@@ -408,6 +410,16 @@ export function PromptCard({
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowEditModal(true);
+                          }}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit prompt
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           onClick={handleDelete}
                           disabled={isDeleting}
                           className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-red-950/20"
@@ -514,6 +526,21 @@ export function PromptCard({
           </div>
         </Link>
       </motion.article>
+
+      {/* Edit Modal */}
+      {isOwner && (
+        <EditPromptModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          prompt={{
+            id: prompt.id,
+            title: prompt.title,
+            promptText: prompt.promptText,
+            type: prompt.type,
+            tags,
+          }}
+        />
+      )}
     </TooltipProvider>
   );
 }

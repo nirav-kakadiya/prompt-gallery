@@ -134,7 +134,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    const { title, promptText, tags, category, style, metadata } = body;
+    const { title, promptText, type, tags, category, style, metadata } = body;
 
     const prompt = await prisma.prompt.findUnique({ where: { id } });
 
@@ -170,6 +170,7 @@ export async function PUT(
       data: {
         ...(title && { title }),
         ...(promptText && { promptText }),
+        ...(type && { type }),
         ...(tags && { tags: JSON.stringify(tags) }),
         ...(category !== undefined && { category }),
         ...(style !== undefined && { style }),

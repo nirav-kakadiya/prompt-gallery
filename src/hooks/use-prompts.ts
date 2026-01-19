@@ -235,3 +235,49 @@ export function useDeletePrompt() {
     },
   });
 }
+
+interface UpdatePromptData {
+  title: string;
+  promptText: string;
+  type: string;
+  tags: string[];
+}
+
+interface UpdateResponse {
+  success: boolean;
+  data: { id: string; slug: string };
+  error?: { code: string; message: string };
+}
+
+async function updatePrompt({ id, data }: { id: string; data: UpdatePromptData }): Promise<{ id: string; slug: string }> {
+  const response = await fetch(`/api/prompts/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const result: UpdateResponse = await response.json();
+
+  if (!result.success) {
+    const errorMessage = result.error?.message || "Failed to update prompt";
+    const errorCode = result.error?.code || "UNKNOWN_ERROR";
+    throw new Error(`${errorCode}: ${errorMessage}`);
+  }
+
+  return result.data;
+}
+
+export function useUpdatePrompt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updatePrompt,
+    onSuccess: (data) => {
+      // Invalidate the specific prompt query
+      queryClient.invalidateQueries({ queryKey: ["prompt", data.id] });
+      // Invalidate all prompt queries to refresh the lists
+      queryClient.invalidateQueries({ queryKey: ["prompts"] });
+      queryClient.invalidateQueries({ queryKey: ["prompts-infinite"] });
+      queryClient.invalidateQueries({ queryKey: ["user-prompts"] });
+    },
+  });
+}
