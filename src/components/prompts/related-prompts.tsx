@@ -45,7 +45,7 @@ export function RelatedPrompts({
   }
 
   return (
-    <section className="py-12 border-t">
+    <section className="py-24">
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-2xl font-bold">{title}</h2>
         {viewAllHref && (

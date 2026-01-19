@@ -22,7 +22,7 @@ function PromptCardSkeleton() {
   return (
     <div className="rounded-2xl border bg-card overflow-hidden">
       {/* Image skeleton */}
-      <Skeleton className="aspect-[4/3] w-full rounded-none" />
+      <Skeleton className="aspect-4/3 w-full rounded-none" />
 
       {/* Content skeleton */}
       <div className="p-4 space-y-3">

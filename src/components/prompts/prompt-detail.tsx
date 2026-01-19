@@ -155,7 +155,7 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-      {/* Image Section */}
+      {/* Image Section - The Height Master */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -164,9 +164,8 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
         <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted">
           {imageUrl && !imageError ? (
             <>
-              {/* Loading placeholder */}
               {!imageLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 animate-pulse">
+                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-muted to-muted/50 animate-pulse">
                   <div className="text-6xl opacity-30">
                     {typeConfig.icon === "Image" && "🖼️"}
                     {typeConfig.icon === "Video" && "🎬"}
@@ -175,7 +174,6 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
                   </div>
                 </div>
               )}
-              {/* Use regular img for external images to avoid CORS/optimization issues */}
               {isExternalImage ? (
                 <img
                   src={imageUrl}
@@ -212,7 +210,7 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
               )}
             </>
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+            <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-muted to-muted/50">
               <div className="text-6xl opacity-30">
                 {typeConfig.icon === "Image" && "🖼️"}
                 {typeConfig.icon === "Video" && "🎬"}
@@ -252,165 +250,194 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
         </div>
       </motion.div>
 
-      {/* Content Section */}
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="space-y-6"
-      >
-        {/* Title */}
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">{prompt.title}</h1>
-
-          {/* Author */}
-          {prompt.author ? (
-            <Link
-              href={`/profile/${prompt.author.username || prompt.author.id}`}
-              className="inline-flex items-center gap-3 hover:opacity-80 transition-opacity"
-            >
-              <UserAvatar
-                user={{
-                  name: prompt.author.name,
-                  image: prompt.author.image,
-                }}
-                size="lg"
-              />
-              <div>
-                <p className="font-medium">
-                  {prompt.author.name || prompt.author.username || "Anonymous"}
-                </p>
-                {prompt.author.username && (
-                  <p className="text-sm text-muted-foreground">
-                    @{prompt.author.username}
-                  </p>
+      {/* Content Section - Matches height of image section on desktop */}
+      <div className="relative min-h-[500px]">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-4 lg:absolute lg:inset-0 lg:flex lg:flex-col lg:overflow-hidden"
+        >
+          {/* Header Area (Optimized for Mobile/Desktop) */}
+          <div className="space-y-4 shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold leading-tight">{prompt.title}</h1>
+                
+                {/* Mobile Author Info - Extremely Compact Line */}
+                {prompt.author && (
+                  <Link
+                    href={`/profile/${prompt.author.username || prompt.author.id}`}
+                    className="sm:hidden flex items-center gap-2 mt-2 hover:opacity-80 transition-opacity"
+                  >
+                    <UserAvatar
+                      user={{
+                        name: prompt.author.name,
+                        image: prompt.author.image,
+                      }}
+                      className="h-6 w-6"
+                    />
+                    <span className="text-sm font-medium">
+                      {prompt.author.name || prompt.author.username || "Anonymous"}
+                    </span>
+                    {prompt.author.username && (
+                      <span className="text-xs text-muted-foreground">
+                        @{prompt.author.username}
+                      </span>
+                    )}
+                  </Link>
                 )}
               </div>
-            </Link>
-          ) : (
-            <p className="text-muted-foreground">Anonymous creator</p>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3">
-          <Button size="lg" onClick={handleCopy} className="flex-1 sm:flex-none">
-            {isCopied ? (
-              <>
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-5 w-5 mr-2" />
-                Copy Prompt
-              </>
-            )}
-          </Button>
-          <Button
-            size="lg"
-            variant={isLiked ? "default" : "outline"}
-            onClick={handleLike}
-            className={cn(isLiked && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
-          >
-            <Heart className={cn("h-5 w-5 mr-2", isLiked && "fill-current")} />
-            {isLiked ? "Liked" : "Like"}
-          </Button>
-          <Button size="lg" variant="outline" onClick={handleShare}>
-            <Share2 className="h-5 w-5 mr-2" />
-            Share
-          </Button>
-        </div>
-
-        {/* Prompt Text */}
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Prompt</h2>
-          <div className="relative">
-            <div className="p-4 rounded-xl bg-muted/50 border overflow-hidden">
-              <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed break-all [overflow-wrap:anywhere]">
-                {prompt.promptText}
-              </p>
+              
+              {/* Desktop Author View - Side Aligned */}
+              {prompt.author && (
+                <Link
+                  href={`/profile/${prompt.author.username || prompt.author.id}`}
+                  className="hidden sm:flex items-center gap-3 hover:opacity-80 transition-opacity shrink-0"
+                >
+                  <div className="text-right">
+                    <p className="text-sm font-semibold leading-none">
+                      {prompt.author.name || prompt.author.username || "Anonymous"}
+                    </p>
+                    {prompt.author.username && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        @{prompt.author.username}
+                      </p>
+                    )}
+                  </div>
+                  <UserAvatar
+                    user={{
+                      name: prompt.author.name,
+                      image: prompt.author.image,
+                    }}
+                    className="h-11 w-11"
+                  />
+                </Link>
+              )}
             </div>
+
+            <div className="flex items-center gap-2">
+              <Button onClick={handleCopy} className="flex-[2] h-10">
+                {isCopied ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Prompt
+                  </>
+                )}
+              </Button>
+              <Button
+                variant={isLiked ? "default" : "outline"}
+                onClick={handleLike}
+                className={cn("flex-1 h-10 px-3", isLiked && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+              >
+                <Heart className={cn("h-4 w-4 sm:mr-2", isLiked && "fill-current")} />
+                <span className="hidden sm:inline">{isLiked ? "Liked" : "Like"}</span>
+              </Button>
+              <Button variant="outline" className="flex-1 h-10 px-3" onClick={handleShare}>
+                <Share2 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Share</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Flexible Prompt Section */}
+          <div className="space-y-3 flex-1 min-h-0 flex flex-col">
+            <h2 className="text-lg font-semibold shrink-0">Prompt</h2>
+            <div className="relative flex-1 min-h-0">
+              <div className="p-4 rounded-xl bg-muted/50 border h-full overflow-y-auto custom-scrollbar">
+                <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed break-all wrap-anywhere">
+                  {prompt.promptText}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 bg-muted/50 hover:bg-muted backdrop-blur-sm"
+                onClick={handleCopy}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Tags & Details Area (Fixed) */}
+          <div className="space-y-6 shrink-0 pt-2 lg:overflow-y-auto lg:max-h-[30%] custom-scrollbar">
+            {/* Tags */}
+            {prompt.tags.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Tag className="h-5 w-5" />
+                  Tags
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {prompt.tags.map((tag) => (
+                    <Link key={tag} href={`/gallery?tag=${tag}`}>
+                      <Badge
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                      >
+                        {tag}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Metadata */}
+            {prompt.metadata && (prompt.metadata.model || prompt.metadata.negativePrompt) && (
+              <div className="space-y-3">
+                <h2 className="text-lg font-semibold">Details</h2>
+                <div className="p-4 rounded-xl bg-muted/50 border space-y-3">
+                  {prompt.metadata.model && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Model: </span>
+                      <span className="text-sm font-medium">{prompt.metadata.model}</span>
+                    </div>
+                  )}
+                  {prompt.category && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Category: </span>
+                      <span className="text-sm font-medium capitalize">{prompt.category}</span>
+                    </div>
+                  )}
+                  {prompt.style && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Style: </span>
+                      <span className="text-sm font-medium capitalize">{prompt.style}</span>
+                    </div>
+                  )}
+                  {prompt.metadata.negativePrompt && (
+                    <div>
+                      <span className="text-sm text-muted-foreground block mb-1">
+                        Negative Prompt:
+                      </span>
+                      <span className="text-sm">{prompt.metadata.negativePrompt}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Area (Fixed) */}
+          <div className="pt-4 shrink-0">
             <Button
-              size="sm"
               variant="ghost"
-              className="absolute top-2 right-2"
-              onClick={handleCopy}
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setShowReportModal(true)}
             >
-              <Copy className="h-4 w-4" />
+              <Flag className="h-4 w-4 mr-2" />
+              Report this prompt
             </Button>
           </div>
-        </div>
-
-        {/* Tags */}
-        {prompt.tags.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Tag className="h-5 w-5" />
-              Tags
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {prompt.tags.map((tag) => (
-                <Link key={tag} href={`/gallery?tag=${tag}`}>
-                  <Badge
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-secondary/80 transition-colors"
-                  >
-                    {tag}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Metadata */}
-        {prompt.metadata && (prompt.metadata.model || prompt.metadata.negativePrompt) && (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold">Details</h2>
-            <div className="p-4 rounded-xl bg-muted/50 border space-y-3">
-              {prompt.metadata.model && (
-                <div>
-                  <span className="text-sm text-muted-foreground">Model: </span>
-                  <span className="text-sm font-medium">{prompt.metadata.model}</span>
-                </div>
-              )}
-              {prompt.category && (
-                <div>
-                  <span className="text-sm text-muted-foreground">Category: </span>
-                  <span className="text-sm font-medium capitalize">{prompt.category}</span>
-                </div>
-              )}
-              {prompt.style && (
-                <div>
-                  <span className="text-sm text-muted-foreground">Style: </span>
-                  <span className="text-sm font-medium capitalize">{prompt.style}</span>
-                </div>
-              )}
-              {prompt.metadata.negativePrompt && (
-                <div>
-                  <span className="text-sm text-muted-foreground block mb-1">
-                    Negative Prompt:
-                  </span>
-                  <span className="text-sm">{prompt.metadata.negativePrompt}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Report */}
-        <div className="pt-4 border-t">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground"
-            onClick={() => setShowReportModal(true)}
-          >
-            <Flag className="h-4 w-4 mr-2" />
-            Report this prompt
-          </Button>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
 
       {/* Report Modal */}
       <AnimatePresence>
@@ -420,7 +447,7 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50"
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
               onClick={() => setShowReportModal(false)}
             />
             <motion.div

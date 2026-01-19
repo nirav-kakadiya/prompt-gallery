@@ -187,7 +187,7 @@ export function AddToCollectionModal({
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {/* Collection preview thumbnails */}
-                      <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
                         {collection.prompts[0]?.prompt?.imageUrl ? (
                           <img
                             src={collection.prompts[0].prompt.imageUrl}
@@ -207,7 +207,7 @@ export function AddToCollectionModal({
                         </div>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 ml-2">
+                    <div className="shrink-0 ml-2">
                       {isAdded ? (
                         <Check className="w-5 h-5 text-green-600" />
                       ) : (
