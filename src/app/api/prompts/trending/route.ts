@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { dbFeatureFlags } from "@/lib/db/feature-flag";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+
+/**
+ * Check if SQLite/Prisma is available (not on serverless)
+ */
+const isSqliteAvailable = !(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+/**
+ * Lazy-load Prisma only when SQLite is available
+ */
+async function getPrisma() {
+  if (!isSqliteAvailable) return null;
+  const { prisma } = await import("@/lib/prisma");
+  return prisma;
+}
 
 // GET /api/prompts/trending - Get trending prompts
 export async function GET(request: NextRequest) {
@@ -25,6 +40,95 @@ export async function GET(request: NextRequest) {
       case "all":
       default:
         dateFilter = undefined;
+    }
+
+    // Use Supabase if it's the primary backend
+    if (dbFeatureFlags.primaryBackend === 'supabase') {
+      const supabase = await createServerClient();
+      
+      // Determine sort column
+      let orderColumn = 'view_count';
+      switch (sortBy) {
+        case "copies":
+          orderColumn = 'copy_count';
+          break;
+        case "likes":
+          orderColumn = 'like_count';
+          break;
+        case "views":
+        default:
+          orderColumn = 'view_count';
+      }
+      
+      let query = supabase
+        .from('prompts')
+        .select(`
+          id, title, slug, prompt_text, type, status,
+          thumbnail_url, image_url, blurhash, category, style,
+          copy_count, like_count, view_count, created_at,
+          author:profiles!author_id(id, name, username, avatar_url)
+        `)
+        .eq('status', 'published');
+      
+      if (dateFilter) {
+        query = query.gte('created_at', dateFilter.toISOString());
+      }
+      
+      query = query
+        .order(orderColumn, { ascending: false })
+        .limit(limit);
+      
+      const { data: prompts, error } = await query;
+      
+      if (error) throw error;
+      
+      // Transform prompts
+      const formattedPrompts = (prompts as any[] || []).map((prompt) => ({
+        id: prompt.id,
+        title: prompt.title,
+        slug: prompt.slug,
+        promptText: prompt.prompt_text,
+        type: prompt.type,
+        status: prompt.status,
+        thumbnailUrl: prompt.thumbnail_url,
+        imageUrl: prompt.image_url,
+        blurhash: prompt.blurhash,
+        category: prompt.category,
+        style: prompt.style,
+        tags: [], // Tags would need separate query
+        author: prompt.author ? {
+          id: prompt.author.id,
+          name: prompt.author.name,
+          username: prompt.author.username,
+          image: prompt.author.avatar_url,
+        } : null,
+        copyCount: prompt.copy_count || 0,
+        likeCount: prompt.like_count || 0,
+        viewCount: prompt.view_count || 0,
+        createdAt: prompt.created_at,
+      }));
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          prompts: formattedPrompts,
+          trendingTags: [], // Would need separate query for tags
+          period,
+        },
+      });
+    }
+
+    // SQLite fallback
+    const prisma = await getPrisma();
+    if (!prisma) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          prompts: [],
+          trendingTags: [],
+          period,
+        },
+      });
     }
 
     // Determine sort field
