@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { verifyPassword, createToken, setAuthCookie } from "@/lib/auth";
 import { dbFeatureFlags } from "@/lib/db/feature-flag";
 import { createClient as createServerClient } from "@/lib/supabase/server";
@@ -10,6 +9,20 @@ import {
   initiateMigration,
   isUserMigrated 
 } from "@/lib/auth/migration";
+
+/**
+ * Check if SQLite/Prisma is available (not on serverless)
+ */
+const isSqliteAvailable = !(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+/**
+ * Lazy-load Prisma only when SQLite is available
+ */
+async function getPrisma() {
+  if (!isSqliteAvailable) return null;
+  const { prisma } = await import("@/lib/prisma");
+  return prisma;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -120,7 +133,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // SQLite authentication (legacy or fallback)
+    // SQLite authentication (legacy or fallback) - only if not on serverless
+    const prisma = await getPrisma();
+    
+    if (!prisma) {
+      // On serverless without SQLite, if we reach here it means Supabase auth failed
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "INVALID_CREDENTIALS",
+            message: "Invalid email or password",
+          },
+        },
+        { status: 401 }
+      );
+    }
+    
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
