@@ -255,7 +255,7 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="space-y-4 lg:absolute lg:inset-0 lg:flex lg:flex-col lg:overflow-hidden"
+          className="space-y-4 lg:overflow-y-auto lg:max-h-full custom-scrollbar"
         >
           {/* Header Area (Optimized for Mobile/Desktop) */}
           <div className="space-y-4 shrink-0">
@@ -345,10 +345,10 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
           </div>
 
           {/* Flexible Prompt Section */}
-          <div className="space-y-3 flex-1 min-h-0 flex flex-col">
+          <div className="space-y-3">
             <h2 className="text-lg font-semibold shrink-0">Prompt</h2>
-            <div className="relative flex-1 min-h-0">
-              <div className="p-4 rounded-xl bg-muted/50 border h-full overflow-y-auto custom-scrollbar">
+            <div className="relative">
+              <div className="p-4 rounded-xl bg-muted/50 border lg:max-h-[50vh] overflow-y-auto custom-scrollbar">
                 <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed break-all wrap-anywhere">
                   {prompt.promptText}
                 </p>
@@ -364,8 +364,8 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
             </div>
           </div>
 
-          {/* Tags & Details Area (Fixed) */}
-          <div className="space-y-6 shrink-0 pt-2 lg:overflow-y-auto lg:max-h-[30%] custom-scrollbar">
+          {/* Tags & Details Area */}
+          <div className="space-y-6 pt-2">
             {/* Tags */}
             {prompt.tags.length > 0 && (
               <div className="space-y-3">
