@@ -215,6 +215,7 @@ export function PromptCard({
       >
         <Link
           href={`/prompts/${prompt.slug}`}
+          scroll={false}
           onClick={(e) => {
             if (onClick) {
               e.preventDefault();

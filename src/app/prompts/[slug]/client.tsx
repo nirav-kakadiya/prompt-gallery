@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { usePathname } from "next/navigation";
+import { useLenis } from "lenis/react";
 import { PageLayout } from "@/components/layout/page-layout";
 import { PromptDetail } from "@/components/prompts/prompt-detail";
 import { RelatedPrompts } from "@/components/prompts/related-prompts";
@@ -63,11 +64,38 @@ interface PromptDetailClientProps {
 
 export function PromptDetailClient({ prompt, relatedPrompts }: PromptDetailClientProps) {
   const pathname = usePathname();
+  const lenis = useLenis();
   const copyMutation = useCopyPrompt();
   const likeMutation = useLikePrompt();
   const { isAuthenticated } = useAuthStore();
   const [likeCount, setLikeCount] = React.useState(prompt.likeCount);
   const [isLiked, setIsLiked] = React.useState(false);
+
+  // Scroll to top when navigating to this page or when prompt changes
+  React.useEffect(() => {
+    // Disable browser scroll restoration
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+
+    const scrollToTop = () => {
+      // Use Lenis scrollTo for smooth scroll
+      if (lenis) {
+        lenis.scrollTo(0, {
+          duration: 0.8,
+          easing: (t) => 1 - Math.pow(1 - t, 3), // easeOutCubic
+        });
+      } else {
+        // Fallback for native smooth scroll
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    };
+
+    // Small delay to let the page render first, then smooth scroll
+    const t = setTimeout(scrollToTop, 50);
+
+    return () => clearTimeout(t);
+  }, [pathname, prompt.id, lenis]);
 
   // Check if user has liked this prompt
   React.useEffect(() => {
