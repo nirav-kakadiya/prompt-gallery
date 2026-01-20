@@ -57,20 +57,25 @@ function GalleryContent() {
     const handleWheel = (e: WheelEvent) => {
       const { scrollTop, scrollHeight, clientHeight } = filterEl;
       const isAtTop = scrollTop <= 0;
-      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
+      const isAtBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight;
 
-      // Only prevent default if we can scroll in the direction of the wheel
-      if ((e.deltaY < 0 && !isAtTop) || (e.deltaY > 0 && !isAtBottom)) {
-        e.preventDefault();
-        e.stopPropagation();
-        filterEl.scrollBy({ top: e.deltaY, behavior: "auto" });
+      // Check if we can scroll in the wheel direction
+      const scrollingDown = e.deltaY > 0;
+      const scrollingUp = e.deltaY < 0;
+
+      // If at boundary and scrolling further in that direction, let page scroll
+      if ((isAtTop && scrollingUp) || (isAtBottom && scrollingDown)) {
+        return; // Let Lenis handle page scroll
       }
+
+      // Otherwise, stop propagation to prevent Lenis and let native scroll work
+      e.stopPropagation();
       updateScrollIndicators();
     };
 
     const handleScroll = () => updateScrollIndicators();
 
-    filterEl.addEventListener("wheel", handleWheel, { passive: false });
+    filterEl.addEventListener("wheel", handleWheel, { passive: true });
     filterEl.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", updateScrollIndicators);
 
@@ -147,7 +152,7 @@ function GalleryContent() {
               {/* Scrollable content */}
               <div
                 ref={filterRef}
-                className="h-full overflow-y-auto pr-2 custom-scrollbar scroll-smooth"
+                className="h-full overflow-y-auto pr-2 custom-scrollbar overscroll-contain"
               >
                 <FiltersSidebar />
               </div>
