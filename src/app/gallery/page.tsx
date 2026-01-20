@@ -33,6 +33,53 @@ function GalleryContent() {
   const { query, types, tags, clearFilters, setQuery, toggleTag } = useFilterStore();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
   const { viewMode, setViewMode, gridColumns, setGridColumns } = usePreferencesStore();
+  const filterRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollUp, setCanScrollUp] = React.useState(false);
+  const [canScrollDown, setCanScrollDown] = React.useState(false);
+
+  // Update scroll indicators
+  const updateScrollIndicators = React.useCallback(() => {
+    const el = filterRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    setCanScrollUp(scrollTop > 5);
+    setCanScrollDown(scrollTop + clientHeight < scrollHeight - 5);
+  }, []);
+
+  // Hover-based scrolling for filter sidebar
+  React.useEffect(() => {
+    const filterEl = filterRef.current;
+    if (!filterEl) return;
+
+    // Initial check
+    updateScrollIndicators();
+
+    const handleWheel = (e: WheelEvent) => {
+      const { scrollTop, scrollHeight, clientHeight } = filterEl;
+      const isAtTop = scrollTop <= 0;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
+
+      // Only prevent default if we can scroll in the direction of the wheel
+      if ((e.deltaY < 0 && !isAtTop) || (e.deltaY > 0 && !isAtBottom)) {
+        e.preventDefault();
+        e.stopPropagation();
+        filterEl.scrollBy({ top: e.deltaY, behavior: "auto" });
+      }
+      updateScrollIndicators();
+    };
+
+    const handleScroll = () => updateScrollIndicators();
+
+    filterEl.addEventListener("wheel", handleWheel, { passive: false });
+    filterEl.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", updateScrollIndicators);
+
+    return () => {
+      filterEl.removeEventListener("wheel", handleWheel);
+      filterEl.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", updateScrollIndicators);
+    };
+  }, [updateScrollIndicators]);
 
   // Handle URL parameters
   React.useEffect(() => {
@@ -89,8 +136,28 @@ function GalleryContent() {
         <div className="flex gap-8 xl:gap-12">
           {/* Sidebar (desktop) */}
           <aside className="hidden lg:block w-60 shrink-0">
-            <div className="sticky top-28 h-[calc(100vh-8rem)] overflow-y-auto pr-2 custom-scrollbar">
-              <FiltersSidebar />
+            <div className="sticky top-28 h-[calc(100vh-8rem)] relative">
+              {/* Top fade indicator */}
+              <div
+                className={cn(
+                  "absolute top-0 left-0 right-2 h-8 bg-gradient-to-b from-background via-background/80 to-transparent z-10 pointer-events-none transition-opacity duration-200",
+                  canScrollUp ? "opacity-100" : "opacity-0"
+                )}
+              />
+              {/* Scrollable content */}
+              <div
+                ref={filterRef}
+                className="h-full overflow-y-auto pr-2 custom-scrollbar scroll-smooth"
+              >
+                <FiltersSidebar />
+              </div>
+              {/* Bottom fade indicator */}
+              <div
+                className={cn(
+                  "absolute bottom-0 left-0 right-2 h-8 bg-gradient-to-t from-background via-background/80 to-transparent z-10 pointer-events-none transition-opacity duration-200",
+                  canScrollDown ? "opacity-100" : "opacity-0"
+                )}
+              />
             </div>
           </aside>
 
