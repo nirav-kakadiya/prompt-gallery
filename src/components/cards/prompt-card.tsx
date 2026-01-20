@@ -70,7 +70,7 @@ export function PromptCard({
   const { user } = useAuthStore();
   const deletePromptMutation = useDeletePrompt();
   const [isLiked, setIsLiked] = React.useState(prompt.isLiked || false);
-  const [, setLikeCount] = React.useState(prompt.likeCount);
+  const [likeCount, setLikeCount] = React.useState(prompt.likeCount);
   const [copyCount, setCopyCount] = React.useState(prompt.copyCount);
   const [isHovered, setIsHovered] = React.useState(false);
   const [isCopying, setIsCopying] = React.useState(false);
@@ -320,18 +320,21 @@ export function PromptCard({
               {/* Action buttons overlay */}
               <div
                 className={cn(
-                  "absolute right-4 top-4 flex items-center gap-2",
-                  "opacity-0 translate-y-[-10px] transition-all duration-500 ease-[0.16,1,0.3,1]",
-                  isHovered && "opacity-100 translate-y-0"
+                  "absolute right-3 top-3 sm:right-4 sm:top-4 flex items-center gap-2",
+                  "transition-all duration-500 ease-[0.16,1,0.3,1]",
+                  // Mobile: always visible, Desktop: show on hover
+                  "sm:opacity-0 sm:translate-y-[-10px]",
+                  isHovered && "sm:opacity-100 sm:translate-y-0"
                 )}
               >
+                {/* Copy button - hidden on mobile, shown on desktop hover */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Magnetic>
                       <Button
                         variant="secondary"
                         size="icon-sm"
-                        className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-9 w-9 rounded-xl"
+                        className="hidden sm:flex bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-9 w-9 rounded-xl"
                         onClick={handleCopy}
                       >
                         <Copy
@@ -346,19 +349,17 @@ export function PromptCard({
                   <TooltipContent side="top" className="text-[10px] font-black uppercase tracking-widest">Copy</TooltipContent>
                 </Tooltip>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Magnetic>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <Button
                         variant="secondary"
                         size="icon-sm"
-                        className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-9 w-9 rounded-xl"
-                        onClick={(e) => e.preventDefault()}
+                        className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-8 w-8 sm:h-9 sm:w-9 rounded-xl"
                       >
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </Button>
-                    </Magnetic>
-                  </DropdownMenuTrigger>
+                    </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-border/40 shadow-2xl">
                     <DropdownMenuItem onClick={handleCopy} className="rounded-lg py-2.5">
                       <Copy className="mr-3 h-4 w-4 opacity-50" />
@@ -413,7 +414,8 @@ export function PromptCard({
                       </>
                     )}
                   </DropdownMenuContent>
-                </DropdownMenu>
+                  </DropdownMenu>
+                </div>
               </div>
 
               {/* Bottom stats overlay */}
@@ -489,7 +491,6 @@ export function PromptCard({
                       key={`${tag}-${index}`}
                       variant="secondary"
                       size="sm"
-                      className="cursor-pointer hover:bg-accent transition-colors"
                     >
                       {tag}
                     </Badge>
@@ -508,7 +509,7 @@ export function PromptCard({
                     <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
                       <span className="flex items-center gap-1">
                         <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current text-destructive")} />
-                        {formatNumber(prompt.likeCount)}
+                        {formatNumber(likeCount)}
                       </span>
                       <span className="flex items-center gap-1">
                         <Copy className="h-3.5 w-3.5" />
@@ -535,7 +536,7 @@ export function PromptCard({
                     <div className="flex items-center gap-2">
                       <span className="flex items-center gap-0.5">
                         <Heart className={cn("h-2.5 w-2.5", isLiked && "fill-current text-destructive/90")} />
-                        {formatNumber(prompt.likeCount)}
+                        {formatNumber(likeCount)}
                       </span>
                       <span className="flex items-center gap-0.5">
                         <Eye className="h-2.5 w-2.5" />
