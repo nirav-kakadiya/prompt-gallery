@@ -52,6 +52,12 @@ const nextConfig: NextConfig = {
         hostname: "*.cloudfront.net",
         pathname: "/**",
       },
+      // PromptHero CDN
+      {
+        protocol: "https",
+        hostname: "cdn.prompthero.com",
+        pathname: "/**",
+      },
     ],
   },
 };

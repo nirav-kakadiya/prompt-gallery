@@ -72,6 +72,7 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
   const [isReporting, setIsReporting] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [imageLoaded, setImageLoaded] = React.useState(false);
+  const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
   const typeConfig = PROMPT_TYPES[prompt.type];
   const imageUrl = prompt.imageUrl || prompt.thumbnailUrl;
@@ -111,6 +112,31 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
     } else {
       await copyToClipboard(url);
       toast.success("Link copied to clipboard!");
+    }
+  };
+
+  // Handle wheel event for hover-based scrolling
+  const handlePromptWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const el = promptBoxRef.current;
+    if (!el) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const hasScrollableContent = scrollHeight > clientHeight;
+    const isAtTop = scrollTop === 0;
+    const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 1;
+    
+    // Only capture scroll if there's scrollable content and we're not at boundaries
+    if (hasScrollableContent) {
+      const scrollingDown = e.deltaY > 0;
+      const scrollingUp = e.deltaY < 0;
+      
+      // Let page scroll if at boundaries and trying to scroll further
+      if ((isAtTop && scrollingUp) || (isAtBottom && scrollingDown)) {
+        return; // Don't prevent default, let page scroll
+      }
+      
+      // Capture scroll for the prompt box
+      e.stopPropagation();
     }
   };
 
@@ -348,7 +374,11 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
           <div className="space-y-3">
             <h2 className="text-lg font-semibold shrink-0">Prompt</h2>
             <div className="relative">
-              <div className="p-4 rounded-xl bg-muted/50 border lg:max-h-[50vh] overflow-y-auto custom-scrollbar">
+              <div 
+                ref={promptBoxRef}
+                className="p-4 rounded-xl bg-muted/50 border lg:max-h-[50vh] overflow-y-auto custom-scrollbar"
+                onWheel={handlePromptWheel}
+              >
                 <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed break-all wrap-anywhere">
                   {prompt.promptText}
                 </p>
