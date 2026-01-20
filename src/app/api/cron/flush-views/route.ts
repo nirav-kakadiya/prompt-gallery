@@ -13,6 +13,12 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
+/** Response shape from flush_view_counts RPC function */
+interface FlushViewCountsResult {
+    prompts_updated: number;
+    views_flushed: number;
+}
+
 export async function GET(request: Request) {
     // Verify Vercel cron secret
     const authHeader = request.headers.get('authorization');
@@ -25,7 +31,10 @@ export async function GET(request: Request) {
     
     try {
         const supabase = createAdminClient();
-        const { data, error } = await supabase.rpc('flush_view_counts');
+        const { data, error } = await supabase.rpc('flush_view_counts') as { 
+            data: FlushViewCountsResult[] | null; 
+            error: Error | null;
+        };
 
         if (error) {
             console.error('[Cron] Flush views failed:', error);
