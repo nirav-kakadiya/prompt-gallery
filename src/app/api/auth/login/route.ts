@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, createToken, setAuthCookie } from "@/lib/auth";
+import { dbFeatureFlags } from "@/lib/db/feature-flag";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { 
+  checkLegacyUser, 
+  verifyLegacyPassword, 
+  initiateMigration,
+  isUserMigrated 
+} from "@/lib/auth/migration";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,9 +29,96 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user
+    const normalizedEmail = email.toLowerCase();
+
+    // If Supabase is the primary backend, try Supabase auth first
+    if (dbFeatureFlags.primaryBackend === 'supabase') {
+      // Check if this is a legacy user that needs migration
+      const legacyUser = await checkLegacyUser(normalizedEmail);
+      
+      if (legacyUser) {
+        // Verify the old password
+        const isValidLegacy = await verifyLegacyPassword(normalizedEmail, password);
+        
+        if (isValidLegacy) {
+          // User has valid legacy credentials but hasn't migrated yet
+          // Check if they've already started migration
+          const alreadyMigrated = await isUserMigrated(normalizedEmail);
+          
+          if (!alreadyMigrated) {
+            // Initiate migration - send password reset email
+            const migrationResult = await initiateMigration(normalizedEmail);
+            
+            return NextResponse.json(
+              {
+                success: false,
+                requiresMigration: true,
+                error: {
+                  code: "MIGRATION_REQUIRED",
+                  message: "Your account needs to be migrated. A password reset email has been sent to your address. Please check your inbox and set a new password to continue.",
+                },
+              },
+              { status: 401 }
+            );
+          }
+        }
+      }
+      
+      // Try Supabase authentication
+      try {
+        const supabase = await createServerClient();
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+        
+        if (!error && data.user) {
+          // Successful Supabase login
+          // Get user profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+          
+          return NextResponse.json({
+            success: true,
+            data: {
+              user: {
+                id: data.user.id,
+                email: data.user.email,
+                name: profile?.name,
+                username: profile?.username,
+                image: profile?.avatar_url,
+                role: profile?.role || 'user',
+              },
+              session: data.session,
+            },
+          });
+        }
+        
+        // Supabase auth failed - if not a legacy user, return error
+        if (!legacyUser) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: "INVALID_CREDENTIALS",
+                message: "Invalid email or password",
+              },
+            },
+            { status: 401 }
+          );
+        }
+      } catch (supabaseError) {
+        console.error("Supabase auth error:", supabaseError);
+        // Fall through to SQLite auth if Supabase fails
+      }
+    }
+
+    // SQLite authentication (legacy or fallback)
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
     });
 
     if (!user || !user.password) {

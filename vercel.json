@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/flush-views",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/flush-copies",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-buffers",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

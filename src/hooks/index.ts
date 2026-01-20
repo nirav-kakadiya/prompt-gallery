@@ -12,3 +12,11 @@ export {
   useSaveCollection,
   useUnsaveCollection,
 } from "./use-collections";
+
+// Realtime hooks (only active when Supabase is primary backend)
+export {
+  useRealtimeLikes,
+  useRealtimeNewPrompts,
+  useRealtimeCollection,
+  getActiveChannelCount,
+} from "./use-realtime";
