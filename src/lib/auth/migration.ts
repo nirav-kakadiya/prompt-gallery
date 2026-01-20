@@ -152,22 +152,32 @@ export async function linkLegacyData(
     
     try {
         // Update prompts to new user ID
-        const { count: promptsUpdated } = await supabase
+        const { data: promptsData } = await supabase
             .from('prompts')
-            .update({ author_id: supabaseUserId })
-            .eq('legacy_author_email', email)
-            .select('id', { count: 'exact', head: true });
+            .select('id')
+            .eq('legacy_author_email', email);
         
-        linkedItems += promptsUpdated || 0;
+        if (promptsData && promptsData.length > 0) {
+            await supabase
+                .from('prompts')
+                .update({ author_id: supabaseUserId } as never)
+                .eq('legacy_author_email', email);
+            linkedItems += promptsData.length;
+        }
         
         // Update collections to new user ID
-        const { count: collectionsUpdated } = await supabase
+        const { data: collectionsData } = await supabase
             .from('collections')
-            .update({ owner_id: supabaseUserId })
-            .eq('legacy_owner_email', email)
-            .select('id', { count: 'exact', head: true });
+            .select('id')
+            .eq('legacy_owner_email', email);
         
-        linkedItems += collectionsUpdated || 0;
+        if (collectionsData && collectionsData.length > 0) {
+            await supabase
+                .from('collections')
+                .update({ owner_id: supabaseUserId } as never)
+                .eq('legacy_owner_email', email);
+            linkedItems += collectionsData.length;
+        }
         
         // Update the Supabase profile with legacy data
         await supabase
@@ -176,13 +186,13 @@ export async function linkLegacyData(
                 username: legacyUser.username,
                 name: legacyUser.name,
                 avatar_url: legacyUser.image,
-                role: legacyUser.role as any,
+                role: legacyUser.role,
                 prompt_count: legacyUser.promptCount,
                 total_copies: legacyUser.totalCopies,
                 total_likes: legacyUser.totalLikes,
                 legacy_user_id: legacyUser.id,
                 migrated_from_sqlite: true
-            })
+            } as never)
             .eq('id', supabaseUserId);
         
         // Mark legacy user as migrated
@@ -216,7 +226,9 @@ export async function isUserMigrated(email: string): Promise<boolean> {
             .eq('email', email)
             .single();
         
-        return data?.migrated_from_sqlite === true;
+        // Type assertion to handle Supabase type inference issue
+        const profile = data as { migrated_from_sqlite: boolean } | null;
+        return profile?.migrated_from_sqlite === true;
     } catch {
         return false;
     }

@@ -13,6 +13,12 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
+/** Response shape from flush_copy_counts RPC function */
+interface FlushCopyCountsResult {
+    prompts_updated: number;
+    copies_flushed: number;
+}
+
 export async function GET(request: Request) {
     // Verify Vercel cron secret
     const authHeader = request.headers.get('authorization');
@@ -25,7 +31,10 @@ export async function GET(request: Request) {
     
     try {
         const supabase = createAdminClient();
-        const { data, error } = await supabase.rpc('flush_copy_counts');
+        const { data, error } = await supabase.rpc('flush_copy_counts') as { 
+            data: FlushCopyCountsResult[] | null; 
+            error: Error | null;
+        };
 
         if (error) {
             console.error('[Cron] Flush copies failed:', error);

@@ -393,8 +393,11 @@ export class PromptRepository {
         
         // Use the optimized function if user ID is provided
         if (userId) {
-            const { data, error } = await supabase
-                .rpc('get_prompt_by_slug', { p_slug: slug, p_user_id: userId });
+            // Type assertion for Supabase RPC type inference issue
+            const { data, error } = await supabase.rpc('get_prompt_by_slug', { 
+                p_slug: slug, 
+                p_user_id: userId 
+            } as never) as { data: any[] | null; error: Error | null };
             
             if (error || !data || data.length === 0) return null;
             
@@ -432,7 +435,7 @@ export class PromptRepository {
         }
         
         // Regular query without user context
-        const { data, error } = await supabase
+        const { data: rawData, error } = await supabase
             .from('prompts')
             .select(`
                 *,
@@ -442,7 +445,10 @@ export class PromptRepository {
             .eq('slug', slug)
             .single();
         
-        if (error || !data) return null;
+        if (error || !rawData) return null;
+        
+        // Type assertion for Supabase type inference
+        const data = rawData as any;
         
         return {
             id: data.id,
@@ -522,6 +528,7 @@ export class PromptRepository {
             try {
                 const supabase = await createServerClient();
                 
+                // Type assertion for Supabase type inference
                 const { data: result, error } = await supabase
                     .from('prompts')
                     .insert({
@@ -538,9 +545,9 @@ export class PromptRepository {
                         author_id: data.authorId,
                         status: data.status || 'published',
                         published_at: data.status === 'published' ? new Date().toISOString() : undefined
-                    })
+                    } as never)
                     .select('id, slug')
-                    .single();
+                    .single() as { data: { id: string; slug: string } | null; error: Error | null };
                 
                 if (error) {
                     console.error('[PromptRepository] Supabase write failed:', error);
@@ -557,14 +564,14 @@ export class PromptRepository {
                                 .upsert({
                                     name: tagName,
                                     slug: tagName.toLowerCase().replace(/\s+/g, '-')
-                                }, { onConflict: 'name' })
+                                } as never, { onConflict: 'name' })
                                 .select('id')
-                                .single();
+                                .single() as { data: { id: string } | null };
                             
                             if (tag) {
                                 await supabase
                                     .from('prompt_tags')
-                                    .insert({ prompt_id: result.id, tag_id: tag.id });
+                                    .insert({ prompt_id: result.id, tag_id: tag.id } as never);
                             }
                         }
                     }
@@ -600,7 +607,8 @@ export class PromptRepository {
         if (dbFeatureFlags.useSupabase) {
             try {
                 const supabase = await createServerClient();
-                await supabase.rpc('buffer_view', { p_prompt_id: promptId });
+                // Type assertion for Supabase RPC type inference
+                await supabase.rpc('buffer_view', { p_prompt_id: promptId } as never);
             } catch (error) {
                 console.error('[PromptRepository] Failed to buffer view:', error);
             }
@@ -622,7 +630,8 @@ export class PromptRepository {
         if (dbFeatureFlags.useSupabase) {
             try {
                 const supabase = await createServerClient();
-                await supabase.rpc('buffer_copy', { p_prompt_id: promptId });
+                // Type assertion for Supabase RPC type inference
+                await supabase.rpc('buffer_copy', { p_prompt_id: promptId } as never);
             } catch (error) {
                 console.error('[PromptRepository] Failed to buffer copy:', error);
             }

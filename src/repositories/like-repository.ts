@@ -110,11 +110,14 @@ export class LikeRepository {
     private async toggleLikeSupabase(promptId: string, userId: string): Promise<ToggleLikeResult> {
         const supabase = await createServerClient();
         
-        const { data, error } = await supabase
-            .rpc('toggle_like', {
-                p_prompt_id: promptId,
-                p_user_id: userId
-            });
+        // Type assertion needed due to Supabase client type inference issues
+        const { data, error } = await supabase.rpc('toggle_like', {
+            p_prompt_id: promptId,
+            p_user_id: userId
+        } as never) as { 
+            data: Array<{ liked: boolean; like_count: number }> | null; 
+            error: Error | null;
+        };
         
         if (error) {
             console.error('[LikeRepository] Toggle like failed:', error);
@@ -176,7 +179,9 @@ export class LikeRepository {
                         .select('prompt_id')
                         .eq('user_id', userId);
                     
-                    return (data || []).map(l => l.prompt_id);
+                    // Type assertion for Supabase type inference
+                    const likesData = data as Array<{ prompt_id: string }> | null;
+                    return (likesData || []).map(l => l.prompt_id);
                 }
                 
                 const likes = await prisma.like.findMany({
@@ -204,7 +209,9 @@ export class LikeRepository {
                 .eq('id', promptId)
                 .single();
             
-            return data?.like_count || 0;
+            // Type assertion for Supabase type inference
+            const promptData = data as { like_count: number } | null;
+            return promptData?.like_count || 0;
         }
         
         const prompt = await prisma.prompt.findUnique({

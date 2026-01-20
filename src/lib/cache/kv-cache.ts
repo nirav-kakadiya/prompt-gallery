@@ -189,7 +189,7 @@ export const cache = {
 
 // Cache key generators for consistent naming
 export const cacheKeys = {
-    prompts: (filters: Record<string, unknown>) => 
+    prompts: (filters: object) => 
         `prompts:${JSON.stringify(filters)}`,
     
     prompt: (idOrSlug: string) => 
