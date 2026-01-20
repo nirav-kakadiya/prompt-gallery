@@ -1,7 +1,22 @@
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-import { prisma } from "./prisma";
+import { dbFeatureFlags } from "./db/feature-flag";
+import { createClient as createServerClient } from "./supabase/server";
+
+/**
+ * Check if SQLite/Prisma is available (not on serverless)
+ */
+const isSqliteAvailable = !(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+/**
+ * Lazy-load Prisma only when SQLite is available
+ */
+async function getPrisma() {
+  if (!isSqliteAvailable) return null;
+  const { prisma } = await import("./prisma");
+  return prisma;
+}
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "your-secret-key-change-in-production"
@@ -65,9 +80,56 @@ export async function removeAuthCookie() {
   cookieStore.delete(COOKIE_NAME);
 }
 
-// Get current user from cookie
+// Get current user from cookie or Supabase session
 export async function getCurrentUser() {
   try {
+    // If Supabase is primary, try to get user from Supabase session first
+    if (dbFeatureFlags.primaryBackend === 'supabase') {
+      const supabase = await createServerClient();
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      
+      if (supabaseUser) {
+        // Get profile data from Supabase
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, email, name, username, avatar_url, bio, role, prompt_count, total_copies, total_likes, created_at')
+          .eq('id', supabaseUser.id)
+          .single();
+        
+        if (profile) {
+          return {
+            id: profile.id,
+            email: profile.email || supabaseUser.email,
+            name: profile.name,
+            username: profile.username,
+            image: profile.avatar_url,
+            bio: profile.bio,
+            role: profile.role || 'user',
+            promptCount: profile.prompt_count || 0,
+            totalCopies: profile.total_copies || 0,
+            totalLikes: profile.total_likes || 0,
+            createdAt: profile.created_at,
+          };
+        }
+        
+        // Return basic user info if no profile exists yet
+        return {
+          id: supabaseUser.id,
+          email: supabaseUser.email,
+          name: supabaseUser.user_metadata?.name || null,
+          username: supabaseUser.user_metadata?.username || null,
+          image: null,
+          bio: null,
+          role: 'user',
+          promptCount: 0,
+          totalCopies: 0,
+          totalLikes: 0,
+          createdAt: supabaseUser.created_at,
+        };
+      }
+    }
+
+    // Fallback to JWT-based auth (for SQLite/local development)
     const cookieStore = await cookies();
     const token = cookieStore.get(COOKIE_NAME)?.value;
 
@@ -75,6 +137,10 @@ export async function getCurrentUser() {
 
     const payload = await verifyToken(token);
     if (!payload) return null;
+
+    // Try to get user from SQLite if available
+    const prisma = await getPrisma();
+    if (!prisma) return null;
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
@@ -94,7 +160,8 @@ export async function getCurrentUser() {
     });
 
     return user;
-  } catch {
+  } catch (error) {
+    console.error("getCurrentUser error:", error);
     return null;
   }
 }
