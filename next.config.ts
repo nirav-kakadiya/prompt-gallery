@@ -1,6 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Exclude extension folder from build
+  typescript: {
+    // The extension has its own tsconfig and build process
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    // Ignore extension folder during lint
+    ignoreDuringBuilds: false,
+  },
+  // Exclude extension from webpack
+  webpack: (config) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ['**/extension/**', '**/node_modules/**'],
+    };
+    return config;
+  },
   images: {
     // Allow images from any HTTPS source
     remotePatterns: [
