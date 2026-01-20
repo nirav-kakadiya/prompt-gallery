@@ -3,11 +3,28 @@
  * 
  * Handles the migration of users from SQLite/bcrypt to Supabase Auth.
  * Since Supabase cannot import bcrypt passwords, users must reset their passwords.
+ * 
+ * Note: On serverless environments (Vercel), SQLite is not available.
+ * Migration functions will return null/false in those cases.
  */
 
-import { prisma } from '@/lib/prisma';
 import { createAdminClient, adminAuth } from '@/lib/supabase/admin';
 import bcrypt from 'bcryptjs';
+
+/**
+ * Check if SQLite/Prisma is available (not on serverless)
+ */
+const isSqliteAvailable = !(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+/**
+ * Lazy-load Prisma only when SQLite is available
+ * This prevents initialization errors on serverless
+ */
+async function getPrisma() {
+    if (!isSqliteAvailable) return null;
+    const { prisma } = await import('@/lib/prisma');
+    return prisma;
+}
 
 interface LegacyUser {
     id: string;
@@ -31,9 +48,18 @@ interface MigrationResult {
 
 /**
  * Check if a user needs to be migrated from SQLite to Supabase
+ * Returns null on serverless environments where SQLite is not available
  */
 export async function checkLegacyUser(email: string): Promise<LegacyUser | null> {
+    // Skip on serverless - no SQLite available
+    if (!isSqliteAvailable) {
+        return null;
+    }
+    
     try {
+        const prisma = await getPrisma();
+        if (!prisma) return null;
+        
         const user = await prisma.user.findUnique({
             where: { email },
             select: {
@@ -110,14 +136,17 @@ export async function initiateMigration(email: string): Promise<MigrationResult>
         }
         
         // The reset email is automatically sent by Supabase
-        // Update the legacy user to mark migration as initiated
-        await prisma.user.update({
-            where: { email },
-            data: {
-                // Add a custom field to track migration status if needed
-                // migratedToSupabase: false // This would need to be added to schema
-            }
-        });
+        // Update the legacy user to mark migration as initiated (only if SQLite available)
+        const prisma = await getPrisma();
+        if (prisma) {
+            await prisma.user.update({
+                where: { email },
+                data: {
+                    // Add a custom field to track migration status if needed
+                    // migratedToSupabase: false // This would need to be added to schema
+                }
+            });
+        }
         
         return {
             success: true,
@@ -195,14 +224,17 @@ export async function linkLegacyData(
             } as never)
             .eq('id', supabaseUserId);
         
-        // Mark legacy user as migrated
-        await prisma.user.update({
-            where: { email },
-            data: {
-                // Clear password to prevent login via legacy system
-                password: null
-            }
-        });
+        // Mark legacy user as migrated (only if SQLite available)
+        const prisma = await getPrisma();
+        if (prisma) {
+            await prisma.user.update({
+                where: { email },
+                data: {
+                    // Clear password to prevent login via legacy system
+                    password: null
+                }
+            });
+        }
         
         console.log(`[AuthMigration] Linked ${linkedItems} items for user ${email}`);
         
@@ -243,9 +275,15 @@ export async function getMigrationStats(): Promise<{
     pendingMigration: number;
 }> {
     try {
-        const totalLegacyUsers = await prisma.user.count({
-            where: { password: { not: null } }
-        });
+        let totalLegacyUsers = 0;
+        
+        // Only count legacy users if SQLite is available
+        const prisma = await getPrisma();
+        if (prisma) {
+            totalLegacyUsers = await prisma.user.count({
+                where: { password: { not: null } }
+            });
+        }
         
         const supabase = createAdminClient();
         const { count: migratedUsers } = await supabase
