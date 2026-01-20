@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { usePathname } from "next/navigation";
 import { PageLayout } from "@/components/layout/page-layout";
 import { PromptDetail } from "@/components/prompts/prompt-detail";
 import { RelatedPrompts } from "@/components/prompts/related-prompts";
@@ -30,7 +31,7 @@ interface PromptData {
   copyCount: number;
   likeCount: number;
   viewCount: number;
-  createdAt: Date;
+  createdAt: Date | string;
   metadata?: string | null;
 }
 
@@ -52,7 +53,7 @@ interface RelatedPromptData {
   copyCount: number;
   likeCount: number;
   viewCount: number;
-  createdAt: Date;
+  createdAt: Date | string;
 }
 
 interface PromptDetailClientProps {
@@ -61,6 +62,7 @@ interface PromptDetailClientProps {
 }
 
 export function PromptDetailClient({ prompt, relatedPrompts }: PromptDetailClientProps) {
+  const pathname = usePathname();
   const copyMutation = useCopyPrompt();
   const likeMutation = useLikePrompt();
   const { isAuthenticated } = useAuthStore();
@@ -127,7 +129,7 @@ export function PromptDetailClient({ prompt, relatedPrompts }: PromptDetailClien
           prompt={{
             ...prompt,
             likeCount,
-            createdAt: prompt.createdAt.toISOString(),
+            createdAt: typeof prompt.createdAt === 'string' ? prompt.createdAt : prompt.createdAt.toISOString(),
             metadata,
           }}
           isLiked={isLiked}
@@ -137,7 +139,7 @@ export function PromptDetailClient({ prompt, relatedPrompts }: PromptDetailClien
         <RelatedPrompts
           prompts={relatedPrompts.map((p) => ({
             ...p,
-            createdAt: p.createdAt.toISOString(),
+            createdAt: typeof p.createdAt === 'string' ? p.createdAt : p.createdAt.toISOString(),
           }))}
           viewAllHref={`/gallery?category=${prompt.category}`}
         />
