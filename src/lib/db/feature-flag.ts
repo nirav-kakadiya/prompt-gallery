@@ -8,16 +8,27 @@
  * 1. DB_BACKEND=sqlite     - Original behavior, SQLite only
  * 2. DB_BACKEND=both       - Dual-write mode, write to both DBs, read from SQLite
  * 3. DB_BACKEND=supabase   - Full Supabase mode, SQLite as fallback only
+ * 
+ * Note: On Vercel/serverless environments, SQLite is not available due to
+ * lack of persistent filesystem. The code auto-detects this and uses Supabase.
  */
 
 export type DbBackend = 'sqlite' | 'supabase' | 'both';
 
 /**
- * Current database backend configuration
- * Defaults to 'sqlite' for safety during migration
+ * Detect if running on Vercel or other serverless environment
+ * where SQLite is not available
  */
-export const dbBackend: DbBackend = 
-    (process.env.DB_BACKEND as DbBackend) || 'sqlite';
+const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+/**
+ * Current database backend configuration
+ * - On Vercel/serverless: Always use 'supabase' (SQLite not available)
+ * - Locally: Respect DB_BACKEND env var, defaulting to 'sqlite'
+ */
+export const dbBackend: DbBackend = isServerless
+    ? 'supabase'
+    : (process.env.DB_BACKEND as DbBackend) || 'sqlite';
 
 /**
  * Check if Supabase should be used for writes
