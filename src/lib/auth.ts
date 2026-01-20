@@ -90,11 +90,26 @@ export async function getCurrentUser() {
       
       if (supabaseUser) {
         // Get profile data from Supabase
-        const { data: profile } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('id, email, name, username, avatar_url, bio, role, prompt_count, total_copies, total_likes, created_at')
           .eq('id', supabaseUser.id)
           .single();
+        
+        // Type assertion for Supabase type inference
+        const profile = profileData as {
+          id: string;
+          email: string | null;
+          name: string | null;
+          username: string | null;
+          avatar_url: string | null;
+          bio: string | null;
+          role: string | null;
+          prompt_count: number | null;
+          total_copies: number | null;
+          total_likes: number | null;
+          created_at: string;
+        } | null;
         
         if (profile) {
           return {
