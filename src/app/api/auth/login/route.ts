@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword, createToken, setAuthCookie } from "@/lib/auth";
 import { dbFeatureFlags } from "@/lib/db/feature-flag";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import type { Profile } from "@/lib/supabase/types";
 import { 
   checkLegacyUser, 
   verifyLegacyPassword, 
@@ -74,12 +75,15 @@ export async function POST(request: NextRequest) {
         
         if (!error && data.user) {
           // Successful Supabase login
-          // Get user profile
-          const { data: profile } = await supabase
+          // Get user profile with explicit column selection
+          const { data: profileData } = await supabase
             .from('profiles')
-            .select('*')
+            .select('name, username, avatar_url, role')
             .eq('id', data.user.id)
             .single();
+          
+          // Type assertion to handle Supabase type inference
+          const profile = profileData as Pick<Profile, 'name' | 'username' | 'avatar_url' | 'role'> | null;
           
           return NextResponse.json({
             success: true,
