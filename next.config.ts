@@ -6,18 +6,8 @@ const nextConfig: NextConfig = {
     // The extension has its own tsconfig and build process
     ignoreBuildErrors: false,
   },
-  eslint: {
-    // Ignore extension folder during lint
-    ignoreDuringBuilds: false,
-  },
-  // Exclude extension from webpack
-  webpack: (config) => {
-    config.watchOptions = {
-      ...config.watchOptions,
-      ignored: ['**/extension/**', '**/node_modules/**'],
-    };
-    return config;
-  },
+  // Empty turbopack config to silence warning (Next.js 16+)
+  turbopack: {},
   images: {
     // Allow images from any HTTPS source
     remotePatterns: [
