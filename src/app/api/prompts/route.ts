@@ -74,24 +74,24 @@ export async function GET(request: NextRequest) {
           where.authorId = authorId;
         }
 
-        // Build orderBy - use array for stable sorting with secondary sort by id
-        let orderBy: Record<string, string>[] = [{ createdAt: "desc" }, { id: "desc" }];
+        // Build orderBy - use publishedAt for chronological ordering (more reliable than UUID)
+        let orderBy: Record<string, string>[] = [{ publishedAt: "desc" }, { createdAt: "desc" }];
         switch (sortBy) {
           case "newest":
-            orderBy = [{ createdAt: "desc" }, { id: "desc" }];
+            orderBy = [{ publishedAt: "desc" }, { createdAt: "desc" }];
             break;
           case "oldest":
-            orderBy = [{ createdAt: "asc" }, { id: "asc" }];
+            orderBy = [{ publishedAt: "asc" }, { createdAt: "asc" }];
             break;
           case "popular":
           case "most_copied":
-            orderBy = [{ copyCount: "desc" }, { createdAt: "desc" }];
+            orderBy = [{ copyCount: "desc" }, { publishedAt: "desc" }];
             break;
           case "most_liked":
-            orderBy = [{ likeCount: "desc" }, { createdAt: "desc" }];
+            orderBy = [{ likeCount: "desc" }, { publishedAt: "desc" }];
             break;
           case "alphabetical":
-            orderBy = [{ title: "asc" }, { createdAt: "desc" }];
+            orderBy = [{ title: "asc" }, { publishedAt: "desc" }];
             break;
         }
 

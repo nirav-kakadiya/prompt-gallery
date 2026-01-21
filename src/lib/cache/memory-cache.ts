@@ -120,9 +120,9 @@ export const cacheKeys = {
 
 // TTLs in seconds
 export const cacheTTL = {
-  prompts: 30,      // 30 seconds for listings
+  prompts: 10,      // 10 seconds for listings (faster updates)
   prompt: 60,       // 1 minute for single prompt
-  trending: 120,    // 2 minutes for trending
+  trending: 60,     // 1 minute for trending
   categories: 300,  // 5 minutes for categories
   collections: 60,  // 1 minute for collections
 };
