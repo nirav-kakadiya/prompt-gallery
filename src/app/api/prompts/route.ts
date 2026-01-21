@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateSlug, parseJSON } from "@/lib/utils";
+import { generateSlug } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
 import { memoryCache, cacheKeys, cacheTTL } from "@/lib/cache/memory-cache";
+import { analyzePromptWithLLM } from "@/lib/vertex-ai";
+import { analyzePrompt, cleanMetadata } from "@/lib/prompt-analyzer";
 import type { PromptType, SortOption } from "@/types";
 
 // GET /api/prompts - List prompts with filters
@@ -233,6 +235,46 @@ export async function POST(request: NextRequest) {
       slug = `${slug}-${Date.now().toString(36)}`;
     }
 
+    // Analyze prompt using LLM (with pattern-matching fallback)
+    let finalCategory = category;
+    let finalStyle = style;
+    let finalMetadata = metadata || {};
+    let allTags = [...tags];
+    let analysisFormat = "user_provided";
+
+    // Only call LLM if we need to extract data (category, style, or tags not provided)
+    const needsAnalysis = !category || !style || tags.length === 0;
+
+    if (needsAnalysis) {
+      // Try LLM analysis first (more accurate)
+      const llmAnalysis = await analyzePromptWithLLM(promptText);
+
+      if (llmAnalysis.success) {
+        analysisFormat = "llm";
+        finalCategory = category || llmAnalysis.category || null;
+        finalStyle = style || llmAnalysis.style || null;
+        finalMetadata = {
+          ...(llmAnalysis.metadata || {}),
+          ...metadata,
+        };
+        // Merge tags: user-provided + LLM-suggested (deduplicated)
+        const llmTags = llmAnalysis.tags || [];
+        allTags = [...new Set([...tags, ...llmTags])].slice(0, 10);
+      } else {
+        // Fallback to pattern-matching if LLM fails
+        console.warn("[Prompts API] LLM analysis failed, falling back to pattern matching");
+        const patternAnalysis = analyzePrompt(promptText);
+        analysisFormat = "pattern";
+        finalCategory = category || patternAnalysis.suggestedCategory || null;
+        finalStyle = style || patternAnalysis.suggestedStyle || null;
+        finalMetadata = {
+          ...cleanMetadata(patternAnalysis.metadata),
+          ...metadata,
+        };
+        allTags = [...new Set([...tags, ...patternAnalysis.suggestedTags])].slice(0, 10);
+      }
+    }
+
     // Create prompt with author if user is authenticated
     const prompt = await prisma.prompt.create({
       data: {
@@ -240,9 +282,9 @@ export async function POST(request: NextRequest) {
         slug,
         promptText,
         type,
-        category,
-        style,
-        metadata: metadata || {},
+        category: finalCategory,
+        style: finalStyle,
+        metadata: finalMetadata,
         imageUrl: imageUrl || null,
         thumbnailUrl: thumbnailUrl || null,
         videoUrl: videoUrl || null,
@@ -252,9 +294,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create tags if provided
-    if (tags.length > 0) {
-      for (const tagName of tags) {
+    // Create tags (includes user-provided + auto-extracted tags)
+    if (allTags.length > 0) {
+      for (const tagName of allTags) {
         // Upsert tag
         const tag = await prisma.tag.upsert({
           where: { name: tagName },
@@ -284,6 +326,13 @@ export async function POST(request: NextRequest) {
           id: prompt.id,
           slug: prompt.slug,
           status: prompt.status,
+          // Return analyzed data so frontend knows what was extracted
+          analyzed: {
+            category: finalCategory,
+            style: finalStyle,
+            tags: allTags,
+            format: analysisFormat, // "llm", "pattern", or "user_provided"
+          },
         },
       },
       { status: 201 }

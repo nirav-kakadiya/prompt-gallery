@@ -59,13 +59,23 @@ function getClient(): GoogleGenAI {
 }
 
 /**
- * Generate a title and tags for a prompt using Gemini (lowest cost text model)
+ * Generate a title, tags, and metadata for a prompt using Gemini (lowest cost text model)
  * This is optimized for cost efficiency while maintaining quality
+ * Returns comprehensive analysis including category, style, format, and other metadata
  */
 export async function generatePromptTitle(promptText: string): Promise<{
   success: boolean;
   title?: string;
   tags?: string[];
+  category?: string;
+  style?: string;
+  metadata?: {
+    format?: string;
+    mood?: string;
+    subject?: string;
+    technique?: string;
+    [key: string]: string | undefined;
+  };
   error?: string;
 }> {
   try {
@@ -87,14 +97,12 @@ export async function generatePromptTitle(promptText: string): Promise<{
       ? promptText.substring(0, 2000) + "..."
       : promptText;
 
-    const prompt = `Analyze this AI art prompt and generate:
-1. A very short and simple title
-2. Relevant tags in a structured format
+    const prompt = `Analyze this AI art prompt comprehensively and generate structured metadata.
 
-SYSTEM INSTRUCTIONS:
-- Understand the prompt content, style, subject, and artistic elements
-- Generate appropriate tags based on the prompt's content, style, subject matter, and artistic characteristics
-- Tags should be relevant, descriptive, and help categorize the prompt
+ANALYSIS REQUIREMENTS:
+- Understand the prompt content, style, subject, and artistic elements deeply
+- Be creative and specific in your analysis - don't just pick from common categories
+- Identify unique characteristics that make this prompt special
 
 TITLE REQUIREMENTS:
 - Maximum 6 words (preferably 3-5 words)
@@ -109,21 +117,39 @@ TAGS REQUIREMENTS:
 - Use lowercase, single words or short phrases (max 2 words per tag)
 - Avoid generic tags like "ai", "art", "prompt"
 - Focus on specific, descriptive tags that help categorize the prompt
-- Examples: "portrait", "photorealistic", "cinematic", "nature", "fantasy", "anime", "cyberpunk", "vibrant", "minimalist"
+
+CATEGORY:
+- Identify the primary category/domain this prompt belongs to
+- Be specific and creative - use the most fitting category for this particular prompt
+- Examples could include but are not limited to: portrait, landscape, architecture, character design, product, concept art, illustration, photography style, abstract, etc.
+
+STYLE:
+- Identify the artistic/visual style of the prompt
+- Be specific about the aesthetic approach
+- Examples could include but are not limited to: photorealistic, cinematic, anime, watercolor, oil painting, digital art, minimalist, surreal, vintage, cyberpunk, etc.
+
+ADDITIONAL METADATA:
+- format: The structural format of the prompt (e.g., "detailed description", "structured json", "simple keywords", "technical specification", etc.)
+- mood: The emotional tone or atmosphere (e.g., "dramatic", "peaceful", "mysterious", "energetic", etc.)
+- subject: The main subject matter (e.g., "female portrait", "urban landscape", "fantasy creature", etc.)
+- technique: Any specific techniques mentioned or implied (e.g., "studio lighting", "long exposure", "macro", "wide angle", etc.)
+- Add any other relevant metadata fields you identify
 
 OUTPUT FORMAT (JSON only, no other text):
 {
   "title": "Short Title Here",
-  "tags": ["tag1", "tag2", "tag3"]
+  "tags": ["tag1", "tag2", "tag3"],
+  "category": "identified category",
+  "style": "identified style",
+  "metadata": {
+    "format": "prompt format type",
+    "mood": "emotional tone",
+    "subject": "main subject",
+    "technique": "techniques used"
+  }
 }
 
-Example output:
-{
-  "title": "Futuristic Cityscape",
-  "tags": ["futuristic", "cityscape", "cyberpunk", "neon", "night", "urban"]
-}
-
-AI art prompt:
+AI art prompt to analyze:
 ${truncatedPrompt}`;
 
     // Try each model name until one works
@@ -136,8 +162,8 @@ ${truncatedPrompt}`;
           model: MODEL_NAME,
           contents: prompt,
           config: {
-            maxOutputTokens: 150, // Increased for JSON with title and tags
-            temperature: 0.5, // Lower temperature for more focused output
+            maxOutputTokens: 400, // Increased for comprehensive JSON with all metadata
+            temperature: 0.6, // Slightly higher for creative category/style suggestions
           },
         });
 
@@ -156,7 +182,7 @@ ${truncatedPrompt}`;
                   const jsonMatch = responseText.match(/\{[\s\S]*\}/);
                   if (jsonMatch) {
                     const parsed = JSON.parse(jsonMatch[0]);
-                    
+
                     // Clean and validate title
                     let title = (parsed.title || '').trim();
                     title = title
@@ -164,13 +190,13 @@ ${truncatedPrompt}`;
                       .replace(/^[-•]\s*/, '') // Remove leading dashes/bullets
                       .replace(/\s+/g, ' ') // Normalize whitespace
                       .trim();
-                    
+
                     // Ensure title is short (max 8 words)
                     const words = title.split(/\s+/);
-                    const cleanTitle = words.length > 8 
+                    const cleanTitle = words.length > 8
                       ? words.slice(0, 8).join(' ')
                       : title;
-                    
+
                     // Clean and validate tags
                     let tags: string[] = [];
                     if (Array.isArray(parsed.tags)) {
@@ -179,13 +205,44 @@ ${truncatedPrompt}`;
                         .filter((tag: string) => tag.length > 0 && tag.length <= 30) // Max 30 chars per tag
                         .slice(0, 8); // Max 8 tags
                     }
-                    
+
+                    // Extract category (clean string)
+                    const category = typeof parsed.category === 'string' && parsed.category.trim()
+                      ? parsed.category.trim().toLowerCase()
+                      : undefined;
+
+                    // Extract style (clean string)
+                    const style = typeof parsed.style === 'string' && parsed.style.trim()
+                      ? parsed.style.trim().toLowerCase()
+                      : undefined;
+
+                    // Extract metadata object
+                    let metadata: Record<string, string | undefined> = {};
+                    if (parsed.metadata && typeof parsed.metadata === 'object') {
+                      for (const [key, value] of Object.entries(parsed.metadata)) {
+                        if (typeof value === 'string' && value.trim()) {
+                          metadata[key] = value.trim();
+                        }
+                      }
+                    }
+                    // Only include metadata if it has values
+                    const hasMetadata = Object.keys(metadata).length > 0;
+
                     if (cleanTitle) {
-                      console.log(`[GenAI] Title and tags generated successfully with ${MODEL_NAME}:`, { title: cleanTitle, tags });
+                      console.log(`[GenAI] Full analysis generated successfully with ${MODEL_NAME}:`, {
+                        title: cleanTitle,
+                        tags,
+                        category,
+                        style,
+                        metadata: hasMetadata ? metadata : undefined
+                      });
                       return {
                         success: true,
                         title: cleanTitle,
                         tags: tags.length > 0 ? tags : undefined,
+                        category,
+                        style,
+                        metadata: hasMetadata ? metadata : undefined,
                       };
                     }
                   }
@@ -433,3 +490,6 @@ export async function generateImageWithImagen(prompt: string): Promise<ImageGene
     };
   }
 }
+
+// Alias for backwards compatibility - analyzePromptWithLLM is the same as generatePromptTitle
+export { generatePromptTitle as analyzePromptWithLLM };

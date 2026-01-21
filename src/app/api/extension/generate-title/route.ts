@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate title and tags using Gemini (lowest cost model)
+    // Generate title, tags, category, style, and metadata using Gemini (one call)
     const result = await generatePromptTitle(promptText.trim());
 
     if (result.success && result.title) {
@@ -45,22 +45,27 @@ export async function POST(request: NextRequest) {
           success: true,
           data: {
             title: result.title,
-            tags: result.tags || [], // Include tags if generated
+            tags: result.tags || [],
+            category: result.category || null,
+            style: result.style || null,
+            metadata: result.metadata || {},
           },
         },
         { headers: corsHeaders }
       );
     }
 
-    // If generation fails, return success with empty title (graceful degradation)
-    // The extension will use the temporary title instead
-    console.warn("Title generation failed, returning empty title for graceful fallback:", result.error);
+    // If generation fails, return success with empty values (graceful degradation)
+    console.warn("Analysis failed, returning empty values for graceful fallback:", result.error);
     return NextResponse.json(
       {
-        success: true, // Return success so extension doesn't show error
+        success: true,
         data: {
-          title: "", // Empty title - extension will use temporary title
-          tags: [], // Empty tags array
+          title: "",
+          tags: [],
+          category: null,
+          style: null,
+          metadata: {},
         },
       },
       { headers: corsHeaders }

@@ -93,8 +93,9 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error authenticating extension user:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { success: false, error: { code: "INTERNAL_ERROR", message: "Authentication failed" } },
+      { success: false, error: { code: "INTERNAL_ERROR", message: `Authentication failed: ${errorMessage}` } },
       { status: 500, headers: corsHeaders }
     );
   }
