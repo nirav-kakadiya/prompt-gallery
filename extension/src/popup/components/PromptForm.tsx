@@ -21,7 +21,6 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
   const [style, setStyle] = useState<string | undefined>(undefined);
   const [llmMetadata, setLlmMetadata] = useState<Record<string, string | undefined> | undefined>(undefined);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -174,41 +173,44 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsSubmitting(true);
 
-    try {
-      const request: CreatePromptRequest = {
-        title: title.trim(),
-        promptText: promptText.trim(),
-        type,
-        tags,
-        category,
-        style,
-        sourceUrl: pendingPrompt.sourceUrl,
-        sourceType: pendingPrompt.sourceType,
-        imageUrl: selectedImage || undefined,
-        metadata: {
-          ...pendingPrompt.metadata,
-          ...llmMetadata,
-          extractedAt: new Date().toISOString(),
-        },
-      };
+    // Build request object
+    const request: CreatePromptRequest = {
+      title: title.trim(),
+      promptText: promptText.trim(),
+      type,
+      tags,
+      category,
+      style,
+      sourceUrl: pendingPrompt.sourceUrl,
+      sourceType: pendingPrompt.sourceType,
+      imageUrl: selectedImage || undefined,
+      metadata: {
+        ...pendingPrompt.metadata,
+        ...llmMetadata,
+        extractedAt: new Date().toISOString(),
+      },
+    };
 
-      const result = await createPrompt(request);
+    // Immediately show success and clear - don't wait for API
+    setSuccess(true);
 
-      if (result.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          onSaved();
-        }, 1500);
-      } else {
-        setError(result.error?.message || 'Failed to save prompt');
-      }
-    } catch (err) {
-      setError('Failed to save. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Process in background (fire and forget)
+    createPrompt(request)
+      .then((result) => {
+        if (!result.success) {
+          // Log error but don't block user - they already moved on
+          console.error('Background save failed:', result.error?.message);
+        }
+      })
+      .catch((err) => {
+        console.error('Background save error:', err);
+      });
+
+    // Clear form after short delay to show success animation
+    setTimeout(() => {
+      onSaved();
+    }, 800);
   };
 
   if (success) {
@@ -351,32 +353,23 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || !title.trim() || !promptText.trim()}
+          disabled={!title.trim() || !promptText.trim()}
           className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
-          {isSubmitting ? (
-            <>
-              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Save Prompt
-            </>
-          )}
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          Save Prompt
         </button>
       </div>
     </form>
