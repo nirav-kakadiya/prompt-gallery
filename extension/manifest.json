@@ -15,7 +15,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "http://localhost:3000/*",
+    "https://prompt-gallery-six.vercel.app/*",
     "https://reddit.com/*",
     "https://www.reddit.com/*",
     "https://old.reddit.com/*",

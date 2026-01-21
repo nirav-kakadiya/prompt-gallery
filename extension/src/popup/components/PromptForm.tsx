@@ -17,6 +17,9 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
   const [promptText, setPromptText] = useState('');
   const [type, setType] = useState<PromptType>('image-to-image'); // Default to image-to-image
   const [tags, setTags] = useState<string[]>([]);
+  const [category, setCategory] = useState<string | undefined>(undefined);
+  const [style, setStyle] = useState<string | undefined>(undefined);
+  const [llmMetadata, setLlmMetadata] = useState<Record<string, string | undefined> | undefined>(undefined);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
@@ -78,7 +81,7 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
               if (result.data.title) {
                 setTitle(result.data.title);
               }
-              
+
               // Set generated tags (merge with existing parsed tags, avoiding duplicates)
               if (result.data?.tags && result.data.tags.length > 0) {
                 // Get current tags state and merge with new ones
@@ -90,6 +93,17 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
                   // Merge: existing tags first, then new generated tags
                   return [...existingTags, ...newTags];
                 });
+              }
+
+              // Set LLM-generated category, style, and metadata
+              if (result.data.category) {
+                setCategory(result.data.category);
+              }
+              if (result.data.style) {
+                setStyle(result.data.style);
+              }
+              if (result.data.metadata) {
+                setLlmMetadata(result.data.metadata);
               }
             } else {
               // If generation fails, keep the temporary title (silently)
@@ -119,13 +133,13 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
 
     try {
       const result = await generateTitle(textToGenerate);
-      
+
       if (result.success && result.data) {
         // Set generated title
         if (result.data.title) {
           setTitle(result.data.title);
         }
-        
+
         // Set generated tags (merge with existing tags, avoiding duplicates)
         if (result.data?.tags && result.data.tags.length > 0) {
           setTags((currentTags) => {
@@ -134,6 +148,17 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
             );
             return [...currentTags, ...newTags];
           });
+        }
+
+        // Set LLM-generated category, style, and metadata
+        if (result.data.category) {
+          setCategory(result.data.category);
+        }
+        if (result.data.style) {
+          setStyle(result.data.style);
+        }
+        if (result.data.metadata) {
+          setLlmMetadata(result.data.metadata);
         }
       } else {
         setError('Failed to generate title and tags. Please try again.');
@@ -157,11 +182,14 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
         promptText: promptText.trim(),
         type,
         tags,
+        category,
+        style,
         sourceUrl: pendingPrompt.sourceUrl,
         sourceType: pendingPrompt.sourceType,
         imageUrl: selectedImage || undefined,
         metadata: {
           ...pendingPrompt.metadata,
+          ...llmMetadata,
           extractedAt: new Date().toISOString(),
         },
       };

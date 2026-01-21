@@ -66,6 +66,7 @@ export interface User {
   name: string | null;
   username: string | null;
   image: string | null;
+  role?: string;
 }
 
 // Auth state
@@ -107,5 +108,5 @@ export const STORAGE_KEYS = {
   SETTINGS: 'settings',
 } as const;
 
-// API base URL - change for production
-export const API_BASE_URL = 'http://localhost:3000';
+// API base URL
+export const API_BASE_URL = 'https://prompt-gallery-six.vercel.app';

@@ -52,8 +52,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     await setPendingPrompt(pendingPrompt);
 
-    // Open popup
-    chrome.action.openPopup();
+    // Open popup (may fail if no active window)
+    chrome.action.openPopup().catch(() => {
+      // Silent fail - user can click extension icon manually
+    });
   }
 
   if (info.menuItemId === 'saveImagePrompt' && info.srcUrl) {
@@ -68,8 +70,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     await setPendingPrompt(pendingPrompt);
 
-    // Open popup
-    chrome.action.openPopup();
+    // Open popup (may fail if no active window)
+    chrome.action.openPopup().catch(() => {
+      // Silent fail - user can click extension icon manually
+    });
   }
 
   if (info.menuItemId === 'savePostToGallery') {
@@ -318,7 +322,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         // If we have data, save it
         if (data && (data.text || (data.imageUrls && data.imageUrls.length > 0))) {
           await setPendingPrompt(data);
-          chrome.action.openPopup();
+          chrome.action.openPopup().catch(() => {});
         } else {
           // Final fallback: create empty prompt
           console.log('No data extracted, creating empty prompt');
@@ -329,7 +333,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
             sourceType: detectSourceType(tab.url || ''),
           };
           await setPendingPrompt(fallbackPrompt);
-          chrome.action.openPopup();
+          chrome.action.openPopup().catch(() => {});
         }
       } catch (err) {
         console.error('Error in main extraction logic:', err);
@@ -341,7 +345,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           sourceType: detectSourceType(tab.url || ''),
         };
         await setPendingPrompt(fallbackPrompt);
-        chrome.action.openPopup();
+        chrome.action.openPopup().catch(() => {});
       }
     })();
   }
@@ -430,7 +434,7 @@ chrome.commands?.onCommand.addListener((command) => {
               sourceType: detectSourceType(tabs[0].url || ''),
             };
             await setPendingPrompt(fallbackPrompt);
-            chrome.action.openPopup();
+            chrome.action.openPopup().catch(() => {});
             return;
           }
 
@@ -442,7 +446,7 @@ chrome.commands?.onCommand.addListener((command) => {
               sourceType: detectSourceType(tabs[0].url || ''),
             };
             await setPendingPrompt(pendingPrompt);
-            chrome.action.openPopup();
+            chrome.action.openPopup().catch(() => {});
           }
         });
       }

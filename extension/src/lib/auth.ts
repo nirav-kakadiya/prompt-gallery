@@ -159,6 +159,3 @@ export async function checkAuth(): Promise<AuthState> {
 
 // Re-export for convenience
 export { getAuthState, clearAuth };
-
-// Export new Supabase-specific functions
-export { loginWithOAuth };
