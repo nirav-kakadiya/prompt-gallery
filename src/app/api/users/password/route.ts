@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUser, hashPassword, verifyPassword } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
-// PUT /api/users/password - Change password
+// PUT /api/users/password - Change password via Supabase Auth
 export async function PUT(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -20,16 +20,16 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { currentPassword, newPassword, confirmPassword } = body;
+    const { newPassword, confirmPassword } = body;
 
     // Validate inputs
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       return NextResponse.json(
         {
           success: false,
           error: {
             code: "MISSING_FIELDS",
-            message: "All password fields are required",
+            message: "New password and confirmation are required",
           },
         },
         { status: 400 }
@@ -62,46 +62,25 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Get user with password
-    const userWithPassword = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { password: true },
+    // Update password via Supabase Auth
+    const supabase = await createServerClient();
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
     });
 
-    if (!userWithPassword?.password) {
+    if (error) {
+      console.error("Supabase password update error:", error);
       return NextResponse.json(
         {
           success: false,
           error: {
-            code: "NO_PASSWORD",
-            message: "Your account uses OAuth login. Password change is not available.",
+            code: "PASSWORD_UPDATE_FAILED",
+            message: error.message || "Failed to update password",
           },
         },
         { status: 400 }
       );
     }
-
-    // Verify current password
-    const isValidPassword = await verifyPassword(currentPassword, userWithPassword.password);
-    if (!isValidPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "INVALID_PASSWORD",
-            message: "Current password is incorrect",
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    // Hash new password and update
-    const hashedPassword = await hashPassword(newPassword);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { password: hashedPassword },
-    });
 
     return NextResponse.json({
       success: true,

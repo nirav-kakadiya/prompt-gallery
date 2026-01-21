@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { validateUsername, looksLikeEmail } from "@/lib/username-utils";
+import { generateAvatarUrl, getAvatarStyles } from "@/lib/profile-utils";
 
 // GET /api/users/profile - Get current user profile
 export async function GET() {
@@ -56,59 +58,183 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, username, bio } = body;
+    const { name, username, bio, avatarStyle, avatarUrl: customAvatarUrl } = body;
 
     // Validate username if provided
-    if (username) {
-      // Check if username is already taken by another user
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          username,
-          id: { not: user.id },
-        },
-      });
-
-      if (existingUser) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: "USERNAME_TAKEN",
-              message: "This username is already taken",
+    let normalizedUsername: string | undefined = undefined;
+    if (username !== undefined) {
+      if (username === null || username === '') {
+        // Allow clearing username
+        normalizedUsername = undefined;
+      } else {
+        // Check if it looks like an email
+        if (looksLikeEmail(username)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: "INVALID_USERNAME",
+                message: "Username cannot be an email address",
+              },
             },
-          },
-          { status: 400 }
-        );
-      }
+            { status: 400 }
+          );
+        }
 
-      // Validate username format (alphanumeric, underscore, hyphen)
-      if (!/^[a-zA-Z0-9_-]{3,30}$/.test(username)) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: "INVALID_USERNAME",
-              message: "Username must be 3-30 characters and can only contain letters, numbers, underscores, and hyphens",
+        // Validate format and reserved names
+        const validation = validateUsername(username);
+        if (!validation.valid) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: "INVALID_USERNAME",
+                message: validation.error,
+              },
             },
-          },
-          { status: 400 }
-        );
+            { status: 400 }
+          );
+        }
+
+        normalizedUsername = validation.normalized;
+
+        // Check if username is already taken by another user (case-insensitive)
+        if (normalizedUsername) {
+          const existingProfile = await prisma.profile.findFirst({
+            where: {
+              username: { equals: normalizedUsername, mode: 'insensitive' },
+              id: { not: user.id },
+            },
+          });
+
+          if (existingProfile) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: {
+                  code: "USERNAME_TAKEN",
+                  message: "This username is already taken",
+                },
+              },
+              { status: 400 }
+            );
+          }
+        }
       }
     }
 
-    const updatedUser = await prisma.user.update({
+    // Validate name length if provided
+    if (name !== undefined && name !== null && name.length > 100) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Name must be 100 characters or less",
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate bio length if provided
+    if (bio !== undefined && bio !== null && bio.length > 500) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Bio must be 500 characters or less",
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Handle avatar update
+    let newAvatarUrl: string | undefined = undefined;
+    if (avatarStyle !== undefined) {
+      // Validate avatar style
+      const validStyles = getAvatarStyles();
+      if (!validStyles.includes(avatarStyle)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: `Invalid avatar style. Valid styles: ${validStyles.join(', ')}`,
+            },
+          },
+          { status: 400 }
+        );
+      }
+      // Generate new DiceBear avatar with selected style
+      newAvatarUrl = generateAvatarUrl(user.id, avatarStyle);
+    } else if (customAvatarUrl !== undefined) {
+      // Allow custom avatar URL (validate it's a valid URL)
+      if (customAvatarUrl === null || customAvatarUrl === '') {
+        // Reset to default DiceBear avatar
+        newAvatarUrl = generateAvatarUrl(user.id);
+      } else {
+        // Validate URL format
+        try {
+          const url = new URL(customAvatarUrl);
+          // Only allow HTTPS URLs for security
+          if (url.protocol !== 'https:') {
+            return NextResponse.json(
+              {
+                success: false,
+                error: {
+                  code: "VALIDATION_ERROR",
+                  message: "Avatar URL must use HTTPS",
+                },
+              },
+              { status: 400 }
+            );
+          }
+          // Limit URL length
+          if (customAvatarUrl.length > 500) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: {
+                  code: "VALIDATION_ERROR",
+                  message: "Avatar URL is too long",
+                },
+              },
+              { status: 400 }
+            );
+          }
+          newAvatarUrl = customAvatarUrl;
+        } catch {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: "VALIDATION_ERROR",
+                message: "Invalid avatar URL",
+              },
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    const updatedProfile = await prisma.profile.update({
       where: { id: user.id },
       data: {
-        ...(name !== undefined && { name }),
-        ...(username !== undefined && { username }),
-        ...(bio !== undefined && { bio }),
+        ...(name !== undefined && { name: name || null }),
+        ...(normalizedUsername !== undefined && { username: normalizedUsername || null }),
+        ...(bio !== undefined && { bio: bio || null }),
+        ...(newAvatarUrl !== undefined && { avatarUrl: newAvatarUrl }),
       },
       select: {
         id: true,
         email: true,
         name: true,
         username: true,
-        image: true,
+        avatarUrl: true,
         bio: true,
         role: true,
         promptCount: true,
@@ -120,7 +246,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: updatedUser,
+      data: {
+        ...updatedProfile,
+        image: updatedProfile.avatarUrl, // For backwards compatibility
+      },
     });
   } catch (error) {
     console.error("Error updating profile:", error);

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, LayoutGrid, List, SlidersHorizontal, Columns2, Grid3X3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,34 @@ export function GallerySection() {
   const { query, types, tags, clearFilters } = useFilterStore();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
   const { viewMode, setViewMode, gridColumns, setGridColumns } = usePreferencesStore();
+
+  // Infinite scroll: observe sentinel element
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage]
+  );
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(handleObserver, {
+      root: null,
+      rootMargin: "400px", // Start loading 400px before reaching bottom
+      threshold: 0,
+    });
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [handleObserver]);
 
   const hasActiveFilters = query || types.length > 0 || tags.length > 0;
 
@@ -272,27 +301,23 @@ export function GallerySection() {
               </TooltipProvider>
             )}
 
-            {/* Load more */}
+            {/* Infinite scroll sentinel & loading indicator */}
             {!isLoading && !error && prompts.length > 0 && (
-              <div className="mt-12 text-center">
-                {hasNextPage ? (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={() => fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                  >
-                    {isFetchingNextPage ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      "Load more prompts"
-                    )}
-                  </Button>
-                ) : (
-                  <p className="text-muted-foreground">
+              <div className="mt-12">
+                {/* Sentinel element for infinite scroll */}
+                <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+
+                {/* Loading indicator */}
+                {isFetchingNextPage && (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <span className="ml-2 text-sm text-muted-foreground">Loading more...</span>
+                  </div>
+                )}
+
+                {/* End of gallery message */}
+                {!hasNextPage && !isFetchingNextPage && (
+                  <p className="text-center text-muted-foreground py-8">
                     You&apos;ve reached the end of the gallery
                   </p>
                 )}

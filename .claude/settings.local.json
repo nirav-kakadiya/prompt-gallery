@@ -16,7 +16,15 @@
       "WebSearch",
       "Bash(npm run type-check:*)",
       "Bash(timeout 15 npm run dev:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(git log:*)",
+      "Bash(npx next build)",
+      "Bash(git show:*)",
+      "Bash(npm run dev:*)",
+      "Bash(source .env)",
+      "Bash(taskkill //F //PID 166408)",
+      "Bash(sqlite3:*)",
+      "Bash(npm run restore-data:*)"
     ]
   }
 }

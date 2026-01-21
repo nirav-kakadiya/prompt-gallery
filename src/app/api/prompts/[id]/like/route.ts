@@ -46,7 +46,7 @@ export async function POST(
     // Check if user already liked this prompt
     const existingLike = await prisma.like.findUnique({
       where: {
-        uniqueLike: {
+        userId_promptId: {
           userId: user.id,
           promptId: id,
         },
@@ -57,44 +57,58 @@ export async function POST(
     let newLikeCount: number;
 
     if (existingLike) {
-      // Unlike - remove the like
-      await prisma.like.delete({
-        where: { id: existingLike.id },
-      });
+      // Unlike - use transaction to ensure consistency
+      const result = await prisma.$transaction(async (tx) => {
+        await tx.like.delete({
+          where: { id: existingLike.id },
+        });
 
-      // Decrement like count
-      const updatedPrompt = await prisma.prompt.update({
-        where: { id },
-        data: { likeCount: { decrement: 1 } },
+        const updatedPrompt = await tx.prompt.update({
+          where: { id },
+          data: { likeCount: { decrement: 1 } },
+        });
+
+        // Decrement author's total likes
+        if (prompt.authorId) {
+          await tx.profile.update({
+            where: { id: prompt.authorId },
+            data: { totalLikes: { decrement: 1 } },
+          });
+        }
+
+        return updatedPrompt;
       });
 
       liked = false;
-      newLikeCount = updatedPrompt.likeCount;
+      newLikeCount = result.likeCount;
     } else {
-      // Like - create new like
-      await prisma.like.create({
-        data: {
-          userId: user.id,
-          promptId: id,
-        },
-      });
+      // Like - use transaction to ensure consistency
+      const result = await prisma.$transaction(async (tx) => {
+        await tx.like.create({
+          data: {
+            userId: user.id,
+            promptId: id,
+          },
+        });
 
-      // Increment like count
-      const updatedPrompt = await prisma.prompt.update({
-        where: { id },
-        data: { likeCount: { increment: 1 } },
+        const updatedPrompt = await tx.prompt.update({
+          where: { id },
+          data: { likeCount: { increment: 1 } },
+        });
+
+        // Increment author's total likes
+        if (prompt.authorId) {
+          await tx.profile.update({
+            where: { id: prompt.authorId },
+            data: { totalLikes: { increment: 1 } },
+          });
+        }
+
+        return updatedPrompt;
       });
 
       liked = true;
-      newLikeCount = updatedPrompt.likeCount;
-
-      // Update author's total likes if they exist
-      if (prompt.authorId) {
-        await prisma.user.update({
-          where: { id: prompt.authorId },
-          data: { totalLikes: { increment: 1 } },
-        });
-      }
+      newLikeCount = result.likeCount;
     }
 
     return NextResponse.json({
@@ -137,7 +151,7 @@ export async function GET(
 
     const existingLike = await prisma.like.findUnique({
       where: {
-        uniqueLike: {
+        userId_promptId: {
           userId: user.id,
           promptId: id,
         },

@@ -92,7 +92,6 @@ export async function POST(request: NextRequest) {
         promptText: promptText.trim(),
         type,
         status: initialStatus,
-        tags: JSON.stringify(Array.isArray(tags) ? tags : []),
         category: category || null,
         style: style || null,
         sourceUrl: sourceUrl || null,
@@ -100,11 +99,11 @@ export async function POST(request: NextRequest) {
         imageUrl: imageUrl || null,
         thumbnailUrl: imageUrl || null, // Use same image for thumbnail
         authorId: user.id,
-        metadata: JSON.stringify({
+        metadata: {
           ...metadata,
           importedVia: "extension",
           importedAt: new Date().toISOString(),
-        }),
+        },
         publishedAt,
       },
       select: {
@@ -114,10 +113,34 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update user prompt count
-    await prisma.user.update({
+    // Create tags via junction table
+    const tagNames = Array.isArray(tags) ? tags : [];
+    for (const tagName of tagNames) {
+      if (!tagName?.trim()) continue;
+      const tag = await prisma.tag.upsert({
+        where: { name: tagName.trim() },
+        create: {
+          name: tagName.trim(),
+          slug: tagName.trim().toLowerCase().replace(/\s+/g, '-'),
+        },
+        update: {},
+      });
+      await prisma.promptTag.create({
+        data: {
+          promptId: prompt.id,
+          tagId: tag.id,
+        },
+      }).catch(() => {
+        // Ignore duplicate
+      });
+    }
+
+    // Update user prompt count (profile tracks this in Supabase)
+    await prisma.profile.update({
       where: { id: user.id },
       data: { promptCount: { increment: 1 } },
+    }).catch(() => {
+      // Profile update may fail if triggers handle it
     });
 
     // Fire-and-forget image generation for text-only prompts

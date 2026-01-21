@@ -25,7 +25,7 @@ export default function RegisterPage() {
   // Redirect if already authenticated
   React.useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.push("/");
+      router.push("/gallery");
     }
   }, [authLoading, isAuthenticated, router]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -68,7 +68,7 @@ export default function RegisterPage() {
       toast.success("Account created!", {
         description: "Welcome to Prompt Gallery",
       });
-      router.push("/");
+      router.push("/gallery");
     } catch (error) {
       toast.error("Registration failed", {
         description: error instanceof Error ? error.message : "Please try again",

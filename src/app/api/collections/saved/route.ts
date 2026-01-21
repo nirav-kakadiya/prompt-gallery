@@ -20,7 +20,7 @@ export async function GET() {
         collection: {
           include: {
             owner: {
-              select: { id: true, name: true, username: true, image: true },
+              select: { id: true, name: true, username: true, avatarUrl: true },
             },
             _count: {
               select: { prompts: true, savedBy: true },

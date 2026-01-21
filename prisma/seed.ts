@@ -1,3 +1,13 @@
+/**
+ * Database Seed Script - Development Only
+ * 
+ * This script seeds the database with sample data for local development.
+ * NOT intended for production use.
+ * 
+ * Note: In production, users are created via Supabase Auth which 
+ * automatically creates profiles via database triggers.
+ */
+
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -100,150 +110,6 @@ const samplePrompts = [
     likeCount: 456,
     viewCount: 3456,
   },
-  {
-    title: "Minimalist Product Shot",
-    promptText: "Clean minimalist product photography of a luxury perfume bottle on white marble surface, soft studio lighting, subtle shadows, professional advertising quality, 4k, sharp focus",
-    type: "text-to-image",
-    tags: ["product", "minimalist", "photography", "luxury", "commercial"],
-    category: "product",
-    style: "photorealistic",
-    thumbnailUrl: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&h=450&fit=crop",
-    copyCount: 432,
-    likeCount: 189,
-    viewCount: 1567,
-  },
-  {
-    title: "Abstract Fluid Art",
-    promptText: "Mesmerizing abstract fluid art with swirling colors of deep purple, electric blue, and molten gold, high contrast, smooth gradients, ink in water effect, 4k wallpaper quality",
-    type: "text-to-image",
-    tags: ["abstract", "fluid", "colorful", "wallpaper", "art"],
-    category: "abstract",
-    style: "abstract",
-    thumbnailUrl: "https://images.unsplash.com/photo-1541356665065-22676f35dd40?w=600&h=450&fit=crop",
-    copyCount: 867,
-    likeCount: 423,
-    viewCount: 3234,
-  },
-  {
-    title: "Cinematic Mountain Landscape",
-    promptText: "Breathtaking mountain landscape at golden hour, snow-capped peaks reflecting in a crystal clear alpine lake, dramatic clouds, National Geographic quality, wide angle lens, epic scale",
-    type: "text-to-image",
-    tags: ["landscape", "mountain", "nature", "cinematic", "golden-hour"],
-    category: "nature",
-    style: "photorealistic",
-    thumbnailUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=450&fit=crop",
-    copyCount: 1456,
-    likeCount: 789,
-    viewCount: 5678,
-  },
-  {
-    title: "Vintage Film Noir Portrait",
-    promptText: "Classic film noir style portrait of a mysterious woman in a 1940s detective office, dramatic shadows from venetian blinds, black and white, high contrast, cigarette smoke curling in the light",
-    type: "text-to-image",
-    tags: ["noir", "vintage", "portrait", "black-and-white", "cinematic"],
-    category: "portrait",
-    style: "cinematic",
-    thumbnailUrl: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&h=450&fit=crop",
-    copyCount: 345,
-    likeCount: 178,
-    viewCount: 1234,
-  },
-  {
-    title: "Futuristic Robot Character",
-    promptText: "Sleek humanoid robot with glowing blue circuitry patterns, chrome and matte black surfaces, standing in a high-tech laboratory, dramatic rim lighting, concept art for AAA game",
-    type: "text-to-image",
-    tags: ["robot", "sci-fi", "character", "futuristic", "concept-art"],
-    category: "character-design",
-    style: "concept-art",
-    thumbnailUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&h=450&fit=crop",
-    copyCount: 1089,
-    likeCount: 567,
-    viewCount: 4567,
-  },
-  {
-    title: "Magical Potion Bottle",
-    promptText: "Ornate glass potion bottle filled with swirling purple and pink magical liquid, floating sparkles inside, placed on an ancient wooden table with scattered herbs and old books, fantasy RPG item art",
-    type: "text-to-image",
-    tags: ["potion", "magic", "fantasy", "rpg", "item"],
-    category: "game-art",
-    style: "fantasy-art",
-    thumbnailUrl: "https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=600&h=450&fit=crop",
-    copyCount: 623,
-    likeCount: 312,
-    viewCount: 2345,
-  },
-  {
-    title: "Tropical Paradise Beach",
-    promptText: "Pristine tropical beach with crystal clear turquoise water, white sand, palm trees swaying in the breeze, hammock between palms, perfect vacation destination, travel photography style",
-    type: "text-to-image",
-    tags: ["beach", "tropical", "paradise", "travel", "vacation"],
-    category: "travel",
-    style: "photorealistic",
-    thumbnailUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=450&fit=crop",
-    copyCount: 978,
-    likeCount: 534,
-    viewCount: 4123,
-  },
-  {
-    title: "Dreamy Waterfall Animation",
-    promptText: "Serene animated loop of a magical waterfall in an enchanted forest, fireflies dancing in the mist, soft moonlight filtering through ancient trees, looping seamlessly, cinemagraph style",
-    type: "text-to-video",
-    tags: ["waterfall", "animation", "loop", "magical", "forest"],
-    category: "animation",
-    style: "fantasy-art",
-    thumbnailUrl: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=600&h=450&fit=crop",
-    copyCount: 234,
-    likeCount: 123,
-    viewCount: 987,
-  },
-  {
-    title: "Photo to Oil Painting",
-    promptText: "Transform photo into classic oil painting style, visible brushstrokes, rich color palette, baroque lighting, canvas texture, museum quality masterpiece, Rembrandt inspired",
-    type: "image-to-image",
-    tags: ["oil-painting", "transform", "classic", "artistic", "style-transfer"],
-    category: "style-transfer",
-    style: "oil-painting",
-    thumbnailUrl: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&h=450&fit=crop",
-    copyCount: 567,
-    likeCount: 289,
-    viewCount: 2134,
-  },
-  {
-    title: "Neon Glow Effect",
-    promptText: "Add vibrant neon glow effect to portrait, cyberpunk color scheme with pink and cyan, lens flare, light trails, futuristic club lighting, dramatic transformation",
-    type: "image-to-image",
-    tags: ["neon", "glow", "cyberpunk", "effect", "portrait"],
-    category: "effects",
-    style: "cyberpunk",
-    thumbnailUrl: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&h=450&fit=crop",
-    copyCount: 789,
-    likeCount: 423,
-    viewCount: 3456,
-  },
-  {
-    title: "Photo to Anime",
-    promptText: "Convert real photo to high quality anime style illustration, Studio Ghibli aesthetic, soft cel shading, detailed eyes, dreamy background, maintain likeness",
-    type: "image-to-image",
-    tags: ["anime", "conversion", "illustration", "ghibli", "style-transfer"],
-    category: "style-transfer",
-    style: "anime",
-    thumbnailUrl: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&h=450&fit=crop",
-    copyCount: 1456,
-    likeCount: 834,
-    viewCount: 6789,
-  },
-  {
-    title: "Living Photograph",
-    promptText: "Animate still photograph with subtle movement, hair flowing in breeze, clouds drifting slowly, leaves rustling, birds flying in distance, peaceful cinemagraph loop",
-    type: "image-to-video",
-    tags: ["animation", "cinemagraph", "living-photo", "loop", "subtle"],
-    category: "animation",
-    style: "photorealistic",
-    thumbnailUrl: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&h=450&fit=crop",
-    copyCount: 345,
-    likeCount: 178,
-    viewCount: 1234,
-  },
 ];
 
 // Sample tags
@@ -258,8 +124,6 @@ const sampleTags = [
   { name: "abstract", slug: "abstract", category: "style" },
   { name: "nature", slug: "nature", category: "subject" },
   { name: "architecture", slug: "architecture", category: "subject" },
-  { name: "character", slug: "character", category: "subject" },
-  { name: "cinematic", slug: "cinematic", category: "style" },
 ];
 
 // Sample categories
@@ -284,42 +148,29 @@ function generateSlug(title: string): string {
 }
 
 async function main() {
-  console.log("🌱 Starting database seed...\n");
+  // Check if we're in development
+  if (process.env.NODE_ENV === "production") {
+    console.log("⚠️  Seed script is for development only. Skipping in production.");
+    return;
+  }
 
-  // Clear existing data
+  console.log("🌱 Starting database seed (Development Mode)...\n");
+
+  // Clear existing data (be careful - this deletes all data!)
   console.log("🗑️  Clearing existing data...");
-  await prisma.collectionPrompt.deleteMany();
-  await prisma.collection.deleteMany();
-  await prisma.like.deleteMany();
-  await prisma.prompt.deleteMany();
-  await prisma.tag.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.apiKey.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.user.deleteMany();
-
-  // Create test users
-  console.log("👤 Creating test users...");
-  const testUser = await prisma.user.create({
-    data: {
-      email: "demo@promptgallery.com",
-      name: "Demo User",
-      username: "demo",
-      bio: "A demo user for testing the Prompt Gallery",
-      role: "user",
-    },
-  });
-
-  const creatorUser = await prisma.user.create({
-    data: {
-      email: "creator@promptgallery.com",
-      name: "AI Art Creator",
-      username: "aicreator",
-      bio: "Professional AI art prompt creator",
-      role: "creator",
-    },
-  });
+  try {
+    await prisma.collectionPrompt.deleteMany();
+    await prisma.collection.deleteMany();
+    await prisma.like.deleteMany();
+    await prisma.promptTag.deleteMany();
+    await prisma.prompt.deleteMany();
+    await prisma.tag.deleteMany();
+    await prisma.category.deleteMany();
+    await prisma.apiKey.deleteMany();
+    // Note: We don't delete profiles as they're managed by Supabase Auth
+  } catch (error) {
+    console.log("⚠️  Some tables may not exist yet, continuing...");
+  }
 
   // Create tags
   console.log("🏷️  Creating tags...");
@@ -333,132 +184,48 @@ async function main() {
     await prisma.category.create({ data: category });
   }
 
-  // Create prompts with all fields
+  // Create prompts (without author - anonymous prompts for demo)
   console.log("✨ Creating prompts...");
-  const createdPrompts = [];
-  for (let i = 0; i < samplePrompts.length; i++) {
-    const prompt = samplePrompts[i];
-    const slug = generateSlug(prompt.title);
+  for (const promptData of samplePrompts) {
+    const slug = generateSlug(promptData.title);
+    const { tags, ...rest } = promptData;
     
-    // Assign author - alternate between users
-    const authorId = i % 2 === 0 ? testUser.id : creatorUser.id;
-    
-    // Create metadata based on prompt type
-    const metadata: any = {
-      model: prompt.type.includes("video") ? "Runway Gen-2" : "Midjourney v6",
-      modelVersion: prompt.type.includes("video") ? "2.0" : "6.0",
-      submissionSource: i < 3 ? "extension" : i < 6 ? "web" : "api",
-    };
-    
-    // Add parameters for some prompts
-    if (i % 3 === 0) {
-      metadata.parameters = {
-        steps: 50,
-        cfgScale: 7.5,
-        seed: Math.floor(Math.random() * 1000000),
-        sampler: "DPM++ 2M Karras",
-        width: 1024,
-        height: 1024,
-      };
-    }
-    
-    // Add negative prompt for some
-    if (i % 4 === 0) {
-      metadata.negativePrompt = "blurry, low quality, distorted, ugly, bad anatomy";
-    }
-    
-    // Set sourceUrl and sourceType for extension-sourced prompts
-    const sourceUrl = i < 3 ? `https://twitter.com/user/status/${1234567890 + i}` : null;
-    const sourceType = i < 3 ? "twitter" : i < 6 ? "reddit" : null;
-    
-    // Set imageUrl (use thumbnailUrl as fallback)
-    const imageUrl = prompt.thumbnailUrl;
-    
-    // Set videoUrl for video types
-    const videoUrl = prompt.type.includes("video") 
-      ? `https://example.com/videos/${slug}.mp4` 
-      : null;
-    
-    const createdPrompt = await prisma.prompt.create({
+    // Create the prompt
+    const prompt = await prisma.prompt.create({
       data: {
-        title: prompt.title,
+        ...rest,
         slug,
-        promptText: prompt.promptText,
-        type: prompt.type,
-        tags: JSON.stringify(prompt.tags),
-        category: prompt.category,
-        style: prompt.style,
-        thumbnailUrl: prompt.thumbnailUrl,
-        imageUrl: imageUrl,
-        videoUrl: videoUrl,
-        blurhash: null, // Can be added later if needed
-        sourceUrl: sourceUrl,
-        sourceType: sourceType,
-        authorId: authorId,
-        metadata: JSON.stringify(metadata),
+        imageUrl: promptData.thumbnailUrl,
         status: "published",
         publishedAt: new Date(),
-        copyCount: prompt.copyCount,
-        likeCount: prompt.likeCount,
-        viewCount: prompt.viewCount,
+        metadata: {
+          model: "Midjourney v6",
+          modelVersion: "6.0",
+        },
       },
     });
-    
-    createdPrompts.push(createdPrompt);
-  }
 
-  // Update user prompt counts
-  console.log("📊 Updating user stats...");
-  await prisma.user.update({
-    where: { id: testUser.id },
-    data: { promptCount: Math.ceil(samplePrompts.length / 2) },
-  });
-  await prisma.user.update({
-    where: { id: creatorUser.id },
-    data: { promptCount: Math.floor(samplePrompts.length / 2) },
-  });
-
-  // Create some likes
-  console.log("❤️  Creating likes...");
-  for (let i = 0; i < Math.min(10, createdPrompts.length); i++) {
-    await prisma.like.create({
-      data: {
-        userId: i % 2 === 0 ? testUser.id : creatorUser.id,
-        promptId: createdPrompts[i].id,
-      },
-    });
-  }
-
-  // Create a sample collection
-  console.log("📚 Creating collections...");
-  const collection = await prisma.collection.create({
-    data: {
-      name: "My Favorite Prompts",
-      description: "A collection of my favorite AI art prompts",
-      isPublic: true,
-      ownerId: testUser.id,
-      promptCount: 5,
-    },
-  });
-
-  // Add some prompts to collection
-  for (let i = 0; i < 5; i++) {
-    await prisma.collectionPrompt.create({
-      data: {
-        collectionId: collection.id,
-        promptId: createdPrompts[i].id,
-        displayOrder: i,
-      },
-    });
+    // Create prompt-tag relationships
+    for (const tagName of tags) {
+      const tag = await prisma.tag.findUnique({ where: { name: tagName } });
+      if (tag) {
+        await prisma.promptTag.create({
+          data: {
+            promptId: prompt.id,
+            tagId: tag.id,
+          },
+        }).catch(() => {
+          // Tag might not exist, skip
+        });
+      }
+    }
   }
 
   console.log("\n✅ Database seeded successfully!");
-  console.log(`   - 2 users created`);
   console.log(`   - ${sampleTags.length} tags created`);
   console.log(`   - ${sampleCategories.length} categories created`);
   console.log(`   - ${samplePrompts.length} prompts created`);
-  console.log(`   - 10 likes created`);
-  console.log(`   - 1 collection created with 5 prompts`);
+  console.log("\n📝 Note: No users created - use Supabase Auth to create users.");
 }
 
 main()

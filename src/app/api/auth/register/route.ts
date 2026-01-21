@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hashPassword, createToken, setAuthCookie } from "@/lib/auth";
-import { dbFeatureFlags } from "@/lib/db/feature-flag";
+import { prisma } from "@/lib/prisma";
+import { createToken, setAuthCookie } from "@/lib/auth";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-
-/**
- * Check if SQLite/Prisma is available (not on serverless)
- */
-const isSqliteAvailable = !(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-
-/**
- * Lazy-load Prisma only when SQLite is available
- */
-async function getPrisma() {
-  if (!isSqliteAvailable) return null;
-  const { prisma } = await import("@/lib/prisma");
-  return prisma;
-}
+import { validateUsername, looksLikeEmail } from "@/lib/username-utils";
+import { generateUniqueUsername, generateAvatarUrl, isUsernameAvailable } from "@/lib/profile-utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,22 +37,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedEmail = email.toLowerCase();
-    const normalizedUsername = username?.toLowerCase() || null;
+    // Validate username format and reserved names
+    if (username) {
+      if (looksLikeEmail(username)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "Username cannot be an email address",
+            },
+          },
+          { status: 400 }
+        );
+      }
 
-    // If Supabase is the primary backend, register via Supabase Auth
-    if (dbFeatureFlags.primaryBackend === 'supabase') {
-      const supabase = await createServerClient();
-      
-      // Check if username is taken (if provided)
-      if (normalizedUsername) {
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('username', normalizedUsername)
-          .single();
-        
-        if (existingProfile) {
+      const usernameValidation = validateUsername(username);
+      if (!usernameValidation.valid) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: usernameValidation.error,
+            },
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Determine username - use provided or auto-generate later
+    let finalUsername: string | null = null;
+    if (username) {
+      const usernameResult = validateUsername(username);
+      finalUsername = usernameResult.normalized || null;
+
+      // Check if provided username is taken
+      if (finalUsername) {
+        const isAvailable = await isUsernameAvailable(finalUsername);
+        if (!isAvailable) {
           return NextResponse.json(
             {
               success: false,
@@ -77,161 +91,123 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-      
-      // Register with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: {
-          data: {
-            name: name || null,
-            username: normalizedUsername,
-          },
-        },
-      });
-      
-      if (authError) {
-        console.error("Supabase registration error:", authError);
-        
-        // Handle specific Supabase errors
-        if (authError.message.includes('already registered')) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: {
-                code: "USER_EXISTS",
-                message: "Email already registered",
-              },
-            },
-            { status: 409 }
-          );
-        }
-        
-        return NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: "REGISTRATION_ERROR",
-              message: authError.message,
-            },
-          },
-          { status: 400 }
-        );
-      }
-      
-      if (!authData.user) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: "REGISTRATION_ERROR",
-              message: "Failed to create user",
-            },
-          },
-          { status: 500 }
-        );
-      }
-      
-      // Update profile with username and name
-      // The profile is auto-created by Supabase trigger, we just need to update it
-      if (normalizedUsername || name) {
-        await supabase
-          .from('profiles')
-          .update({
-            username: normalizedUsername,
-            name: name || null,
-          } as never)
-          .eq('id', authData.user.id);
-      }
-      
-      return NextResponse.json({
-        success: true,
-        data: {
-          user: {
-            id: authData.user.id,
-            email: authData.user.email,
-            name: name || null,
-            username: normalizedUsername,
-            image: null,
-            role: 'user',
-          },
-          session: authData.session,
-        },
-      });
     }
 
-    // SQLite registration (legacy/local development) - only if not on serverless
-    const prisma = await getPrisma();
-    
-    if (!prisma) {
-      // On serverless without SQLite and Supabase not primary, return error
+    const supabase = await createServerClient();
+
+    // Register with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: normalizedEmail,
+      password,
+      options: {
+        data: {
+          name: name || null,
+          username: finalUsername,
+        },
+      },
+    });
+
+    if (authError) {
+      console.error("Supabase registration error:", authError);
+
+      // Handle specific Supabase errors
+      if (authError.message.includes('already registered')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "USER_EXISTS",
+              message: "Email already registered",
+            },
+          },
+          { status: 409 }
+        );
+      }
+
       return NextResponse.json(
         {
           success: false,
           error: {
-            code: "INTERNAL_ERROR",
-            message: "Registration service unavailable",
+            code: "REGISTRATION_ERROR",
+            message: authError.message,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!authData.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "REGISTRATION_ERROR",
+            message: "Failed to create user",
           },
         },
         { status: 500 }
       );
     }
 
-    // Check if user exists in SQLite
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: normalizedEmail },
-          ...(normalizedUsername ? [{ username: normalizedUsername }] : []),
-        ],
-      },
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "USER_EXISTS",
-            message:
-              existingUser.email === normalizedEmail
-                ? "Email already registered"
-                : "Username already taken",
-          },
-        },
-        { status: 409 }
-      );
+    // Auto-generate username if not provided
+    if (!finalUsername) {
+      finalUsername = await generateUniqueUsername({
+        email: normalizedEmail,
+        name: name || undefined,
+        userId: authData.user.id,
+      });
     }
 
-    // Hash password and create user
-    const hashedPassword = await hashPassword(password);
+    // Generate DiceBear avatar URL
+    const avatarUrl = generateAvatarUrl(authData.user.id);
 
-    const user = await prisma.user.create({
-      data: {
-        email: normalizedEmail,
-        password: hashedPassword,
-        name: name || null,
-        username: normalizedUsername,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        username: true,
-        image: true,
-        role: true,
-        createdAt: true,
-      },
+    // Create or update profile with auto-generated defaults
+    // Try to update first (in case Supabase trigger created it)
+    let profile = await prisma.profile.findUnique({
+      where: { id: authData.user.id },
+      select: { id: true }
     });
 
-    // Create token and set cookie
-    const token = await createToken({ userId: user.id, email: user.email });
+    if (profile) {
+      // Update existing profile
+      await prisma.profile.update({
+        where: { id: authData.user.id },
+        data: {
+          email: normalizedEmail,
+          username: finalUsername,
+          name: name || null,
+          avatarUrl: avatarUrl,
+        },
+      });
+    } else {
+      // Create new profile
+      await prisma.profile.create({
+        data: {
+          id: authData.user.id,
+          email: normalizedEmail,
+          username: finalUsername,
+          name: name || null,
+          avatarUrl: avatarUrl,
+        },
+      });
+    }
+
+    // Create JWT token for fallback auth
+    const token = await createToken({ userId: authData.user.id, email: normalizedEmail });
     await setAuthCookie(token);
 
     return NextResponse.json({
       success: true,
       data: {
-        user,
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          name: name || null,
+          username: finalUsername,
+          image: avatarUrl,
+          role: 'user',
+        },
+        session: authData.session,
         token,
       },
     });

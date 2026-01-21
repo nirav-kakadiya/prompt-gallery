@@ -24,19 +24,23 @@ export async function POST(
       );
     }
 
-    // Increment copy count
-    const updatedPrompt = await prisma.prompt.update({
-      where: { id },
-      data: { copyCount: { increment: 1 } },
-    });
-
-    // Update author's total copies
-    if (prompt.authorId) {
-      await prisma.user.update({
-        where: { id: prompt.authorId },
-        data: { totalCopies: { increment: 1 } },
+    // Use transaction to ensure consistency
+    const updatedPrompt = await prisma.$transaction(async (tx) => {
+      const updated = await tx.prompt.update({
+        where: { id },
+        data: { copyCount: { increment: 1 } },
       });
-    }
+
+      // Update author's total copies
+      if (prompt.authorId) {
+        await tx.profile.update({
+          where: { id: prompt.authorId },
+          data: { totalCopies: { increment: 1 } },
+        });
+      }
+
+      return updated;
+    });
 
     return NextResponse.json({
       success: true,

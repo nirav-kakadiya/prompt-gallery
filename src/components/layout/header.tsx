@@ -119,7 +119,7 @@ export function Header({ onSearch }: HeaderProps) {
       <div className="w-full px-6 sm:px-10 lg:px-12 xl:px-16">
         <div className="flex items-center justify-between h-14 md:h-16">
           {/* Minimalist Logo */}
-          <Link href="/" className="flex items-center gap-3 group shrink-0">
+          <Link href="/gallery" className="flex items-center gap-3 group shrink-0">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20 transition-transform group-hover:rotate-12">
               <Sparkles className="w-4 h-4 text-white" />
             </div>

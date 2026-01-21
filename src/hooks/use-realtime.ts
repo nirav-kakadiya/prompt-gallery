@@ -13,7 +13,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { dbFeatureFlags } from '@/lib/db/feature-flag';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 // Global connection tracking for monitoring
@@ -40,11 +39,6 @@ export function useRealtimeLikes(promptIds: string[]) {
     const [isConnected, setIsConnected] = useState(false);
     
     const subscribe = useCallback(() => {
-        // Skip if realtime is not enabled
-        if (!dbFeatureFlags.realtimeEnabled) {
-            return null;
-        }
-        
         // Limit concurrent subscriptions to prevent cost explosion
         if (promptIds.length > 50) {
             console.warn('[Realtime] Too many subscriptions requested, using polling fallback');
@@ -160,14 +154,9 @@ export function useRealtimeNewPrompts() {
     const [isConnected, setIsConnected] = useState(false);
     
     useEffect(() => {
-        // Skip if realtime is not enabled
-        if (!dbFeatureFlags.realtimeEnabled) {
-            return;
-        }
-        
         const supabase = getSupabaseClient();
         if (!supabase) return;
-        
+
         const subscribe = () => {
             return supabase
                 .channel('new-prompts-global')
@@ -236,10 +225,10 @@ export function useRealtimeCollection(collectionId: string | null) {
     const [isConnected, setIsConnected] = useState(false);
     
     useEffect(() => {
-        if (!dbFeatureFlags.realtimeEnabled || !collectionId) {
+        if (!collectionId) {
             return;
         }
-        
+
         const supabase = getSupabaseClient();
         if (!supabase) return;
         

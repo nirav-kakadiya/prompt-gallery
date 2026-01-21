@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { PromptDetailClient } from "./client";
 
@@ -7,13 +8,57 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// Generate metadata for SEO
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
+// Cache the prompt fetch to avoid duplicate queries between generateMetadata and page
+const getPromptData = cache(async (slug: string) => {
   const prompt = await prisma.prompt.findUnique({
     where: { slug },
-    select: { title: true, promptText: true, thumbnailUrl: true },
+    include: {
+      author: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          avatarUrl: true,
+        },
+      },
+      promptTags: {
+        include: {
+          tag: {
+            select: { name: true }
+          }
+        }
+      }
+    },
   });
+
+  if (!prompt) return null;
+
+  // Increment view count - fire and forget (don't await)
+  prisma.prompt.update({
+    where: { id: prompt.id },
+    data: { viewCount: { increment: 1 } },
+  }).catch(() => {});
+
+  const tags = prompt.promptTags.map(pt => pt.tag.name);
+
+  return {
+    ...prompt,
+    tags,
+    type: prompt.type as "text-to-image" | "text-to-video" | "image-to-image" | "image-to-video",
+    author: prompt.author ? {
+      id: prompt.author.id,
+      name: prompt.author.name,
+      username: prompt.author.username,
+      image: prompt.author.avatarUrl,
+    } : null,
+    metadata: prompt.metadata ? JSON.stringify(prompt.metadata) : null,
+  };
+});
+
+// Generate metadata for SEO - uses cached prompt data
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const prompt = await getPromptData(slug);
 
   if (!prompt) {
     return { title: "Prompt Not Found" };
@@ -30,80 +75,42 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-async function getPrompt(slug: string) {
-  const prompt = await prisma.prompt.findUnique({
-    where: { slug },
-    include: {
-      author: {
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          image: true,
-        },
-      },
-    },
-  });
-
-  if (!prompt) return null;
-
-  // Increment view count
-  await prisma.prompt.update({
-    where: { id: prompt.id },
-    data: { viewCount: { increment: 1 } },
-  });
-
-  // Parse tags from JSON string
-  let tags: string[] = [];
-  try {
-    tags = JSON.parse(prompt.tags);
-  } catch {
-    tags = [];
-  }
-
-  return {
-    ...prompt,
-    tags,
-    type: prompt.type as "text-to-image" | "text-to-video" | "image-to-image" | "image-to-video",
-  };
-}
-
+// Get related prompts - matches original algorithm with tag scoring
 async function getRelatedPrompts(prompt: {
   id: string;
-  category: string | null;
   type: string;
-  tags: string[];
+  category: string | null;
   style: string | null;
+  tags: string[];
   authorId?: string | null;
 }) {
-  // Cost-optimized: Only fetch prompts that have at least one matching attribute
-  // This reduces DB load significantly compared to fetching all prompts
+  // Build OR conditions for relevance
+  const orConditions: Array<{ type?: string; category?: string; style?: string; authorId?: string }> = [
+    { type: prompt.type },
+  ];
+  if (prompt.category) orConditions.push({ category: prompt.category });
+  if (prompt.style) orConditions.push({ style: prompt.style });
+  if (prompt.authorId) orConditions.push({ authorId: prompt.authorId });
+
   const candidates = await prisma.prompt.findMany({
     where: {
       id: { not: prompt.id },
       status: "published",
-      OR: [
-        ...(prompt.category ? [{ category: prompt.category }] : []),
-        { type: prompt.type },
-        ...(prompt.style ? [{ style: prompt.style }] : []),
-        ...(prompt.authorId ? [{ authorId: prompt.authorId }] : []),
-      ],
+      OR: orConditions,
     },
-    take: 20, // Reduced from 50 - enough for good selection while saving resources
+    take: 20,
     orderBy: { copyCount: "desc" },
     select: {
-      // Only select needed fields to reduce memory/transfer
       id: true,
       title: true,
       slug: true,
       promptText: true,
       type: true,
-      thumbnailUrl: true,
-      blurhash: true,
-      tags: true,
       category: true,
       style: true,
       authorId: true,
+      thumbnailUrl: true,
+      blurhash: true,
       copyCount: true,
       likeCount: true,
       viewCount: true,
@@ -113,29 +120,25 @@ async function getRelatedPrompts(prompt: {
           id: true,
           name: true,
           username: true,
-          image: true,
+          avatarUrl: true,
         },
       },
+      promptTags: {
+        select: {
+          tag: { select: { name: true } }
+        }
+      }
     },
   });
 
-  // Early return if no candidates
-  if (candidates.length === 0) {
-    return [];
-  }
+  if (candidates.length === 0) return [];
 
-  // Prepare lowercase tags once for efficient comparison
+  // Prepare lowercase tags for comparison
   const promptTagsLower = prompt.tags.map(t => t.toLowerCase());
 
-  // Score and sort candidates by relevance
-  const scored = candidates.map((candidate) => {
-    let candidateTags: string[] = [];
-    try {
-      candidateTags = JSON.parse(candidate.tags);
-    } catch {
-      candidateTags = [];
-    }
-
+  // Score by relevance (same algorithm as original)
+  const scored = candidates.map(candidate => {
+    const candidateTags = candidate.promptTags.map(pt => pt.tag.name);
     let score = 0;
 
     // Score 1: Shared tags (highest weight - 5 points per shared tag)
@@ -165,28 +168,43 @@ async function getRelatedPrompts(prompt: {
       score += 1;
     }
 
-    return { ...candidate, tags: candidateTags, score };
+    return { ...candidate, candidateTags, score };
   });
 
-  // Sort by score and return top 4
+  // Sort by score, take top 4
   return scored
     .sort((a, b) => b.score - a.score)
     .slice(0, 4)
-    .map(({ score, ...rest }) => ({
+    .map(({ score, candidateTags, promptTags, ...rest }) => ({
       ...rest,
+      tags: candidateTags,
       type: rest.type as "text-to-image" | "text-to-video" | "image-to-image" | "image-to-video",
+      author: rest.author ? {
+        id: rest.author.id,
+        name: rest.author.name,
+        username: rest.author.username,
+        image: rest.author.avatarUrl,
+      } : null,
     }));
 }
 
 export default async function PromptDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const prompt = await getPrompt(slug);
+  const prompt = await getPromptData(slug);
 
   if (!prompt) {
     notFound();
   }
 
-  const relatedPrompts = await getRelatedPrompts(prompt);
+  // Fetch related prompts with full scoring (tags, category, type, style, author)
+  const relatedPrompts = await getRelatedPrompts({
+    id: prompt.id,
+    type: prompt.type,
+    category: prompt.category,
+    style: prompt.style,
+    tags: prompt.tags,
+    authorId: prompt.authorId,
+  });
 
   return <PromptDetailClient prompt={prompt} relatedPrompts={relatedPrompts} />;
 }

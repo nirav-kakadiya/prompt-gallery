@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createToken } from "@/lib/auth";
 
 // CORS headers for extension requests
 const corsHeaders = {
@@ -14,7 +15,7 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-// POST /api/extension/auth - Authenticate extension user
+// POST /api/extension/auth - Authenticate extension user via Supabase
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -35,53 +36,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Authenticate via Supabase
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (error || !data.user) {
+      return NextResponse.json(
+        { success: false, error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password" } },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    // Get profile data
+    const profile = await prisma.profile.findUnique({
+      where: { id: data.user.id },
       select: {
         id: true,
         name: true,
         email: true,
         username: true,
-        image: true,
-        password: true,
+        avatarUrl: true,
         role: true,
       },
     });
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password" } },
-        { status: 401, headers: corsHeaders }
-      );
-    }
+    // Generate JWT token for extension use
+    const token = await createToken({ 
+      userId: data.user.id, 
+      email: normalizedEmail 
+    });
 
-    // Check if user has a password (might be OAuth user)
-    if (!user.password) {
-      return NextResponse.json(
-        { success: false, error: { code: "NO_PASSWORD", message: "Please log in via the website first to set a password" } },
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    // Verify password
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return NextResponse.json(
-        { success: false, error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password" } },
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    // Return user data (excluding password)
-    // Note: For production, implement proper JWT token generation
     const userData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      username: user.username,
-      image: user.image,
-      role: user.role,
+      id: data.user.id,
+      name: profile?.name || data.user.user_metadata?.name,
+      email: profile?.email || data.user.email,
+      username: profile?.username,
+      image: profile?.avatarUrl,
+      role: profile?.role || 'user',
     };
 
     return NextResponse.json(
@@ -89,8 +85,8 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           user: userData,
-          // In production, generate and return a proper JWT token
-          // token: generateJWT(user.id),
+          token,
+          session: data.session,
         },
       },
       { headers: corsHeaders }
@@ -105,10 +101,8 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/extension/auth - Get current user (session check)
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // For now, we'll use cookie-based auth
-    // In production, validate JWT token from Authorization header
     const { getCurrentUser } = await import("@/lib/auth");
     const user = await getCurrentUser();
 

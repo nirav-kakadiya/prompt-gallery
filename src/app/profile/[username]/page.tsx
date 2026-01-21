@@ -13,47 +13,51 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  const user = await prisma.user.findUnique({
-    where: { username },
+  // Case-insensitive lookup for better UX
+  const profile = await prisma.profile.findFirst({
+    where: { username: { equals: username, mode: 'insensitive' } },
     select: { name: true, username: true },
   });
 
-  if (!user) {
+  if (!profile) {
     return { title: "User Not Found" };
   }
 
   return {
-    title: `${user.name || user.username} - Profile`,
-    description: `View ${user.name || user.username}'s prompts on Prompt Gallery`,
+    title: `${profile.name || profile.username} - Profile`,
+    description: `View ${profile.name || profile.username}'s prompts on Prompt Gallery`,
   };
 }
 
 export default async function PublicProfilePage({ params }: Props) {
   const { username } = await params;
 
-  const user = await prisma.user.findUnique({
-    where: { username },
+  // Case-insensitive lookup for better UX (handles /profile/Nirav and /profile/nirav)
+  const profile = await prisma.profile.findFirst({
+    where: { username: { equals: username, mode: 'insensitive' } },
     include: {
       prompts: {
+        where: { status: 'published' }, // Only show published prompts
         orderBy: { createdAt: "desc" },
         take: 12,
         include: {
-          author: { select: { name: true, username: true } },
+          author: { select: { name: true, username: true, avatarUrl: true } },
+          promptTags: { select: { tag: { select: { name: true } } } },
         },
       },
       _count: {
-        select: { prompts: true },
+        select: { prompts: { where: { status: 'published' } } },
       },
     },
   });
 
-  if (!user) {
+  if (!profile) {
     notFound();
   }
 
   // Calculate stats
   const stats = await prisma.prompt.aggregate({
-    where: { authorId: user.id },
+    where: { authorId: profile.id },
     _sum: {
       viewCount: true,
       copyCount: true,
@@ -67,24 +71,24 @@ export default async function PublicProfilePage({ params }: Props) {
         {/* Profile Header */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-12">
           <Avatar className="w-24 h-24">
-            <AvatarImage src={user.image || undefined} />
+            <AvatarImage src={profile.avatarUrl || undefined} />
             <AvatarFallback className="text-2xl">
-              {(user.name || user.username || "U").charAt(0).toUpperCase()}
+              {(profile.name || profile.username || "U").charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
 
           <div className="text-center sm:text-left flex-1">
-            <h1 className="text-3xl font-bold mb-1">{user.name || user.username}</h1>
-            <p className="text-muted-foreground mb-3">@{user.username}</p>
+            <h1 className="text-3xl font-bold mb-1">{profile.name || profile.username}</h1>
+            <p className="text-muted-foreground mb-3">@{profile.username}</p>
 
-            {user.bio && (
-              <p className="text-muted-foreground max-w-xl mb-4">{user.bio}</p>
+            {profile.bio && (
+              <p className="text-muted-foreground max-w-xl mb-4">{profile.bio}</p>
             )}
 
             <div className="flex items-center justify-center sm:justify-start gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                Joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                Joined {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
               </span>
             </div>
           </div>
@@ -98,7 +102,7 @@ export default async function PublicProfilePage({ params }: Props) {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
           <div className="p-4 rounded-xl bg-muted/50 text-center">
-            <div className="text-2xl font-bold">{user._count.prompts}</div>
+            <div className="text-2xl font-bold">{profile._count.prompts}</div>
             <div className="text-sm text-muted-foreground">Prompts</div>
           </div>
           <div className="p-4 rounded-xl bg-muted/50 text-center">
@@ -126,11 +130,11 @@ export default async function PublicProfilePage({ params }: Props) {
 
         {/* User's Prompts */}
         <div>
-          <h2 className="text-xl font-semibold mb-6">Prompts by {user.name || user.username}</h2>
+          <h2 className="text-xl font-semibold mb-6">Prompts by {profile.name || profile.username}</h2>
 
-          {user.prompts.length > 0 ? (
+          {profile.prompts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {user.prompts.map((prompt) => (
+              {profile.prompts.map((prompt) => (
                 <PromptCard key={prompt.id} prompt={prompt as unknown as Parameters<typeof PromptCard>[0]["prompt"]} />
               ))}
             </div>

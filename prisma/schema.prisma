@@ -1,259 +1,268 @@
 // Prisma Schema for Prompt Gallery
-// Using SQLite for development (cost-free), easy to switch to PostgreSQL for production
+// Connected to Supabase PostgreSQL
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// User model for authentication
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  username      String?   @unique
-  bio           String?
-  role          String    @default("user") // user, creator, moderator, admin
-
-  // Stats
-  promptCount   Int       @default(0)
-  totalCopies   Int       @default(0)
-  totalLikes    Int       @default(0)
-
-  // Timestamps
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+// Profile model (extends Supabase auth.users)
+model Profile {
+  id                  String    @id @db.Uuid
+  email               String?   @unique
+  username            String?   @unique
+  name                String?
+  bio                 String?
+  avatarUrl           String?   @map("avatar_url")
+  role                String    @default("user")
+  promptCount         Int       @default(0) @map("prompt_count")
+  totalCopies         Int       @default(0) @map("total_copies")
+  totalLikes          Int       @default(0) @map("total_likes")
+  legacyUserId        String?   @map("legacy_user_id")
+  migratedFromSqlite  Boolean   @default(false) @map("migrated_from_sqlite")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
-  accounts      Account[]
-  sessions      Session[]
-  prompts       Prompt[]
-  likes         Like[]
-  collections   Collection[]
-  savedCollections SavedCollection[]
-  apiKeys       ApiKey[]
-}
+  prompts             Prompt[]
+  likes               Like[]
+  collections         Collection[]
+  savedCollections    SavedCollection[]
+  apiKeys             ApiKey[]
+  reports             Report[]
 
-model Account {
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([provider, providerAccountId])
-}
-
-model Session {
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
-
-  @@id([identifier, token])
+  @@map("profiles")
 }
 
 // Main Prompt model
 model Prompt {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  promptText  String
-  type        String   // text-to-image, text-to-video, image-to-image, image-to-video
-  status      String   @default("published") // draft, pending_review, pending_image, processing, published, rejected, archived
-
-  // Media
-  imageUrl      String?
-  thumbnailUrl  String?
-  videoUrl      String?
-  blurhash      String?
-
-  // Categorization (stored as JSON string for SQLite compatibility)
-  tags        String   @default("[]") // JSON array as string
-  category    String?
-  style       String?
-
-  // Source (for extension imports)
-  sourceUrl   String?  // Original URL where prompt was found
-  sourceType  String?  // reddit, twitter, selection, other
-
-  // Author
-  authorId    String?
-  author      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-
-  // Metadata (stored as JSON string)
-  metadata    String   @default("{}") // JSON object as string
-
-  // Stats
-  viewCount   Int      @default(0)
-  copyCount   Int      @default(0)
-  likeCount   Int      @default(0)
-
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  publishedAt DateTime?
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title           String
+  slug            String    @unique
+  promptText      String    @map("prompt_text")
+  type            String
+  status          String    @default("published")
+  imageUrl        String?   @map("image_url")
+  thumbnailUrl    String?   @map("thumbnail_url")
+  videoUrl        String?   @map("video_url")
+  blurhash        String?
+  category        String?
+  style           String?
+  sourceUrl       String?   @map("source_url")
+  sourceType      String?   @map("source_type")
+  authorId        String?   @map("author_id") @db.Uuid
+  legacyPromptId  String?   @map("legacy_prompt_id")
+  legacyAuthorEmail String? @map("legacy_author_email")
+  metadata        Json      @default("{}")
+  viewCount       Int       @default(0) @map("view_count")
+  copyCount       Int       @default(0) @map("copy_count")
+  likeCount       Int       @default(0) @map("like_count")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  publishedAt     DateTime? @map("published_at") @db.Timestamptz
 
   // Relations
-  likes       Like[]
+  author            Profile?           @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  likes             Like[]
   collectionPrompts CollectionPrompt[]
+  promptTags        PromptTag[]
+  reports           Report[]
 
   @@index([type])
   @@index([status])
   @@index([authorId])
   @@index([createdAt])
+  @@index([slug])
+  @@map("prompts")
+}
+
+// Tag model
+model Tag {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String      @unique
+  slug        String      @unique
+  category    String?
+  promptCount Int         @default(0) @map("prompt_count")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  promptTags  PromptTag[]
+
+  @@map("tags")
+}
+
+// Junction table for Prompt <-> Tag
+model PromptTag {
+  promptId  String   @map("prompt_id") @db.Uuid
+  tagId     String   @map("tag_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([promptId, tagId])
+  @@map("prompt_tags")
+}
+
+// Category model
+model Category {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String    @unique
+  slug         String    @unique
+  description  String?
+  icon         String?
+  parentId     String?   @map("parent_id") @db.Uuid
+  promptCount  Int       @default(0) @map("prompt_count")
+  displayOrder Int       @default(0) @map("display_order")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("categories")
 }
 
 // Like model for user interactions
 model Like {
-  id        String   @id @default(cuid())
-  userId    String
-  promptId  String
-  createdAt DateTime @default(now())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  promptId  String   @map("prompt_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
   prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, promptId], name: "uniqueLike")
+  @@unique([userId, promptId])
+  @@map("likes")
 }
 
 // Collection model for organizing prompts
 model Collection {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  coverImageUrl String?
-  isPublic      Boolean  @default(true)
-  ownerId       String
-  promptCount   Int      @default(0)
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  description     String?
+  coverImageUrl   String?  @map("cover_image_url")
+  isPublic        Boolean  @default(true) @map("is_public")
+  ownerId         String?  @map("owner_id") @db.Uuid
+  legacyCollectionId String? @map("legacy_collection_id")
+  legacyOwnerEmail   String? @map("legacy_owner_email")
+  promptCount     Int      @default(0) @map("prompt_count")
+  saveCount       Int      @default(0) @map("save_count")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  prompts       CollectionPrompt[]
-  savedBy       SavedCollection[]
+  owner           Profile?           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  prompts         CollectionPrompt[]
+  savedBy         SavedCollection[]
 
   @@index([isPublic])
   @@index([ownerId])
+  @@map("collections")
 }
 
-// Saved Collections - tracks which users have saved which public collections
-model SavedCollection {
-  userId        String
-  collectionId  String
-  savedAt       DateTime @default(now())
-
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-
-  @@id([userId, collectionId])
-}
-
-// Junction table for Collection <-> Prompt many-to-many
+// Junction table for Collection <-> Prompt
 model CollectionPrompt {
-  collectionId  String
-  promptId      String
-  addedAt       DateTime @default(now())
-  displayOrder  Int      @default(0)
+  collectionId  String   @map("collection_id") @db.Uuid
+  promptId      String   @map("prompt_id") @db.Uuid
+  displayOrder  Int      @default(0) @map("display_order")
+  addedAt       DateTime @default(now()) @map("added_at") @db.Timestamptz
 
   collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   prompt        Prompt     @relation(fields: [promptId], references: [id], onDelete: Cascade)
 
   @@id([collectionId, promptId])
+  @@map("collection_prompts")
+}
+
+// Saved Collections - tracks which users have saved which public collections
+model SavedCollection {
+  userId        String   @map("user_id") @db.Uuid
+  collectionId  String   @map("collection_id") @db.Uuid
+  savedAt       DateTime @default(now()) @map("saved_at") @db.Timestamptz
+
+  user          Profile    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, collectionId])
+  @@map("saved_collections")
+}
+
+// View buffer for batched updates
+model ViewBuffer {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId  String   @map("prompt_id") @db.Uuid
+  count     Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([promptId])
+  @@map("view_buffer")
+}
+
+// Copy buffer for batched updates
+model CopyBuffer {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId  String   @map("prompt_id") @db.Uuid
+  count     Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([promptId])
+  @@map("copy_buffer")
 }
 
 // API Key for extension authentication
 model ApiKey {
-  id          String    @id @default(cuid())
-  userId      String
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
   name        String
-  keyHash     String
-  keyPrefix   String
-  scopes      String    @default("[]") // JSON array
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
+  keyHash     String    @map("key_hash")
+  keyPrefix   String    @map("key_prefix")
+  scopes      Json      @default("[]")
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+  user        Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-// Tag model for better filtering
-model Tag {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
-  category    String?
-  promptCount Int      @default(0)
-  createdAt   DateTime @default(now())
-}
-
-// Category model
-model Category {
-  id           String    @id @default(cuid())
-  name         String    @unique
-  slug         String    @unique
-  description  String?
-  icon         String?
-  parentId     String?
-  promptCount  Int       @default(0)
-  displayOrder Int       @default(0)
-  createdAt    DateTime  @default(now())
+  @@index([userId])
+  @@index([keyPrefix])
+  @@map("api_keys")
 }
 
 // Contact message model
 model ContactMessage {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   email     String
   subject   String
   message   String
-  status    String   @default("new") // new, read, replied, archived
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    String   @default("new")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@index([status])
   @@index([createdAt])
+  @@map("contact_messages")
 }
 
 // Report model for reporting prompts
 model Report {
-  id        String   @id @default(cuid())
-  promptId  String
-  userId    String?  // Optional - can report without being logged in
-  reason    String   // spam, inappropriate, copyright, other
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId  String   @map("prompt_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  reason    String
   details   String?
-  status    String   @default("pending") // pending, reviewed, resolved, dismissed
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  prompt    Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user      Profile? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([promptId])
   @@index([status])
+  @@map("reports")
 }

@@ -1,22 +1,9 @@
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-import { dbFeatureFlags } from "./db/feature-flag";
+import { prisma } from "./prisma";
 import { createClient as createServerClient } from "./supabase/server";
-
-/**
- * Check if SQLite/Prisma is available (not on serverless)
- */
-const isSqliteAvailable = !(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-
-/**
- * Lazy-load Prisma only when SQLite is available
- */
-async function getPrisma() {
-  if (!isSqliteAvailable) return null;
-  const { prisma } = await import("./prisma");
-  return prisma;
-}
+import { ensureProfileWithDefaults } from "./profile-utils";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "your-secret-key-change-in-production"
@@ -80,71 +67,97 @@ export async function removeAuthCookie() {
   cookieStore.delete(COOKIE_NAME);
 }
 
-// Get current user from cookie or Supabase session
+// Get current user from Supabase session or JWT
 export async function getCurrentUser() {
   try {
-    // If Supabase is primary, try to get user from Supabase session first
-    if (dbFeatureFlags.primaryBackend === 'supabase') {
-      const supabase = await createServerClient();
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-      
-      if (supabaseUser) {
-        // Get profile data from Supabase
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('id, email, name, username, avatar_url, bio, role, prompt_count, total_copies, total_likes, created_at')
-          .eq('id', supabaseUser.id)
-          .single();
-        
-        // Type assertion for Supabase type inference
-        const profile = profileData as {
-          id: string;
-          email: string | null;
-          name: string | null;
-          username: string | null;
-          avatar_url: string | null;
-          bio: string | null;
-          role: string | null;
-          prompt_count: number | null;
-          total_copies: number | null;
-          total_likes: number | null;
-          created_at: string;
-        } | null;
-        
-        if (profile) {
-          return {
-            id: profile.id,
-            email: profile.email || supabaseUser.email,
-            name: profile.name,
-            username: profile.username,
-            image: profile.avatar_url,
-            bio: profile.bio,
-            role: profile.role || 'user',
-            promptCount: profile.prompt_count || 0,
-            totalCopies: profile.total_copies || 0,
-            totalLikes: profile.total_likes || 0,
-            createdAt: profile.created_at,
-          };
+    // Try to get user from Supabase session first
+    const supabase = await createServerClient();
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+    
+    if (supabaseUser) {
+      // Get profile data from Prisma (connected to Supabase PostgreSQL)
+      let profile = await prisma.profile.findUnique({
+        where: { id: supabaseUser.id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          username: true,
+          avatarUrl: true,
+          bio: true,
+          role: true,
+          promptCount: true,
+          totalCopies: true,
+          totalLikes: true,
+          createdAt: true,
+        },
+      });
+
+      if (profile) {
+        // Fill in missing avatar or username for existing users
+        if (!profile.avatarUrl || !profile.username) {
+          const updated = await ensureProfileWithDefaults({
+            userId: profile.id,
+            email: profile.email || supabaseUser.email || undefined,
+            name: profile.name || supabaseUser.user_metadata?.name || undefined,
+          });
+          // Re-fetch to get all fields including the updated ones
+          profile = await prisma.profile.findUnique({
+            where: { id: supabaseUser.id },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              username: true,
+              avatarUrl: true,
+              bio: true,
+              role: true,
+              promptCount: true,
+              totalCopies: true,
+              totalLikes: true,
+              createdAt: true,
+            },
+          });
         }
-        
-        // Return basic user info if no profile exists yet
+
         return {
-          id: supabaseUser.id,
-          email: supabaseUser.email,
-          name: supabaseUser.user_metadata?.name || null,
-          username: supabaseUser.user_metadata?.username || null,
-          image: null,
-          bio: null,
-          role: 'user',
-          promptCount: 0,
-          totalCopies: 0,
-          totalLikes: 0,
-          createdAt: supabaseUser.created_at,
+          id: profile!.id,
+          email: profile!.email || supabaseUser.email,
+          name: profile!.name,
+          username: profile!.username,
+          image: profile!.avatarUrl,
+          bio: profile!.bio,
+          role: profile!.role || 'user',
+          promptCount: profile!.promptCount || 0,
+          totalCopies: profile!.totalCopies || 0,
+          totalLikes: profile!.totalLikes || 0,
+          createdAt: profile!.createdAt.toISOString(),
         };
       }
+
+      // Create profile for Supabase user if it doesn't exist yet
+      const newProfile = await ensureProfileWithDefaults({
+        userId: supabaseUser.id,
+        email: supabaseUser.email || undefined,
+        name: supabaseUser.user_metadata?.name || undefined,
+      });
+
+      return {
+        id: newProfile.id,
+        email: supabaseUser.email,
+        name: newProfile.name,
+        username: newProfile.username,
+        image: newProfile.avatarUrl,
+        bio: null,
+        role: 'user',
+        promptCount: 0,
+        totalCopies: 0,
+        totalLikes: 0,
+        createdAt: supabaseUser.created_at,
+      };
     }
 
-    // Fallback to JWT-based auth (for SQLite/local development)
+    // Fallback to JWT-based auth
     const cookieStore = await cookies();
     const token = cookieStore.get(COOKIE_NAME)?.value;
 
@@ -153,18 +166,15 @@ export async function getCurrentUser() {
     const payload = await verifyToken(token);
     if (!payload) return null;
 
-    // Try to get user from SQLite if available
-    const prisma = await getPrisma();
-    if (!prisma) return null;
-
-    const user = await prisma.user.findUnique({
+    // Get user from Prisma
+    let profile = await prisma.profile.findUnique({
       where: { id: payload.userId },
       select: {
         id: true,
         email: true,
         name: true,
         username: true,
-        image: true,
+        avatarUrl: true,
         bio: true,
         role: true,
         promptCount: true,
@@ -174,7 +184,48 @@ export async function getCurrentUser() {
       },
     });
 
-    return user;
+    if (!profile) return null;
+
+    // Fill in missing avatar or username for existing users
+    if (!profile.avatarUrl || !profile.username) {
+      await ensureProfileWithDefaults({
+        userId: profile.id,
+        email: profile.email || payload.email || undefined,
+        name: profile.name || undefined,
+      });
+      // Re-fetch to get updated fields
+      profile = await prisma.profile.findUnique({
+        where: { id: payload.userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          username: true,
+          avatarUrl: true,
+          bio: true,
+          role: true,
+          promptCount: true,
+          totalCopies: true,
+          totalLikes: true,
+          createdAt: true,
+        },
+      });
+      if (!profile) return null;
+    }
+
+    return {
+      id: profile.id,
+      email: profile.email,
+      name: profile.name,
+      username: profile.username,
+      image: profile.avatarUrl,
+      bio: profile.bio,
+      role: profile.role || 'user',
+      promptCount: profile.promptCount || 0,
+      totalCopies: profile.totalCopies || 0,
+      totalLikes: profile.totalLikes || 0,
+      createdAt: profile.createdAt.toISOString(),
+    };
   } catch (error) {
     console.error("getCurrentUser error:", error);
     return null;

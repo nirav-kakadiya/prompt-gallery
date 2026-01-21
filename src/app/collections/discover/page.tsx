@@ -231,7 +231,7 @@ export default function DiscoverCollectionsPage() {
                         )}
                         {/* Owner info */}
                         <div className="flex items-center gap-2 mt-3">
-                          {collection.owner.image ? (
+                          {collection.owner?.image ? (
                             <img
                               src={collection.owner.image}
                               alt=""
@@ -240,12 +240,12 @@ export default function DiscoverCollectionsPage() {
                           ) : (
                             <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
                               <span className="text-xs">
-                                {(collection.owner.name || "U")[0].toUpperCase()}
+                                {(collection.owner?.name || "A")[0].toUpperCase()}
                               </span>
                             </div>
                           )}
                           <span className="text-xs text-muted-foreground">
-                            {collection.owner.name || collection.owner.username || "Anonymous"}
+                            {collection.owner?.name || collection.owner?.username || "Anonymous"}
                           </span>
                         </div>
                       </div>

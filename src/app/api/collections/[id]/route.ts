@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       where: { id },
       include: {
         owner: {
-          select: { id: true, name: true, username: true, image: true },
+          select: { id: true, name: true, username: true, avatarUrl: true },
         },
         prompts: {
           orderBy: { addedAt: "desc" },
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             prompt: {
               include: {
                 author: {
-                  select: { id: true, name: true, username: true, image: true },
+                  select: { id: true, name: true, username: true, avatarUrl: true },
                 },
               },
             },
