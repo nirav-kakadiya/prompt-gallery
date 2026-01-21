@@ -57,6 +57,7 @@ export interface PendingPrompt {
   sourceType: SourceType;
   tags?: string[];
   metadata?: PromptMetadata;
+  isLoading?: boolean; // True while extracting data in background
 }
 
 // User data

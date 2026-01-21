@@ -77,96 +77,27 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 
   if (info.menuItemId === 'savePostToGallery') {
-    // Helper to check if content script is loaded
-    const checkContentScriptLoaded = async (): Promise<boolean> => {
+    // Fast extraction via content script - no retries, fail fast
+    const extractViaMessage = (): Promise<PendingPrompt | null> => {
       return new Promise((resolve) => {
         try {
-          // Send a ping message to check if content script is available
-          chrome.tabs.sendMessage(tab.id!, { type: 'PING' }, () => {
-            if (chrome.runtime.lastError) {
-              resolve(false);
-            } else {
-              resolve(true);
-            }
-          });
-        } catch {
-          resolve(false);
-        }
-      });
-    };
+          // Set a short timeout - if content script doesn't respond quickly, use fallback
+          const timeout = setTimeout(() => resolve(null), 300);
 
-    // Helper to ensure content script is loaded (wait and retry)
-    const ensureContentScriptLoaded = async (): Promise<boolean> => {
-      const isLoaded = await checkContentScriptLoaded();
-      if (isLoaded) {
-        return true;
-      }
-
-      // Note: In Manifest V3, we can't dynamically inject content scripts
-      // They must be declared in manifest.json
-      // So we'll just wait a bit longer and retry
-      try {
-        console.log('Content script not loaded, waiting for it to initialize...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        return await checkContentScriptLoaded();
-      } catch (err) {
-        console.error('Failed to ensure content script loaded:', err);
-        return false;
-      }
-    };
-
-    // Helper to extract data using content script message
-    const extractViaMessage = async (retries = 3, delay = 1000): Promise<PendingPrompt | null> => {
-      // First ensure content script is loaded
-      const isLoaded = await ensureContentScriptLoaded();
-      if (!isLoaded && retries > 0) {
-        console.log('Content script not loaded, waiting and retrying...');
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return extractViaMessage(retries - 1, delay);
-      }
-      
-      if (!isLoaded) {
-        console.warn('Content script could not be loaded after retries');
-        return null;
-      }
-
-      return new Promise((resolve) => {
-        try {
           chrome.tabs.sendMessage(tab.id!, { type: 'EXTRACT_POST_AT_CLICK' }, (response) => {
-            if (chrome.runtime.lastError) {
-              const errorMessage = chrome.runtime.lastError.message || 'Unknown error';
-              console.error('Error extracting post via message:', errorMessage);
-              
-              // Retry if we have retries left and it's a connection error
-              if (retries > 0 && (errorMessage.includes('Could not establish connection') || 
-                                  errorMessage.includes('Extension context invalidated'))) {
-                console.log(`Retrying message... (${retries} attempts left)`);
-                setTimeout(() => {
-                  extractViaMessage(retries - 1, delay).then(resolve);
-                }, delay);
-                return;
-              }
-              
+            clearTimeout(timeout);
+            if (chrome.runtime.lastError || !response) {
               resolve(null);
               return;
             }
-
-            if (response && (response.text || response.imageUrls?.length > 0)) {
+            if (response.text || response.imageUrls?.length > 0) {
               resolve(response);
             } else {
               resolve(null);
             }
           });
-        } catch (err) {
-          console.error('Failed to send message:', err);
-          if (retries > 0) {
-            setTimeout(() => {
-              extractViaMessage(retries - 1, delay).then(resolve);
-            }, delay);
-          } else {
-            resolve(null);
-          }
+        } catch {
+          resolve(null);
         }
       });
     };
@@ -300,52 +231,44 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       }
     };
 
-    // Main extraction logic
+    // FAST: Save basic info and open popup IMMEDIATELY, extract in background
+    const basicPrompt: PendingPrompt = {
+      text: '',
+      sourceUrl: tab.url || '',
+      sourceTitle: tab.title,
+      sourceType: detectSourceType(tab.url || ''),
+      isLoading: true, // Flag to show loading state in popup
+    };
+
+    // Save and open popup immediately (non-blocking)
+    setPendingPrompt(basicPrompt).then(() => {
+      chrome.action.openPopup().catch(() => {});
+    });
+
+    // Extract data in background and update storage
     (async () => {
       try {
-        // First, try to use content script message (faster, has full functionality)
-        let data = await extractViaMessage(3, 1000);
-        
-        // If that fails, try script injection as fallback
+        let data = await extractViaMessage();
         if (!data || (!data.text && (!data.imageUrls || data.imageUrls.length === 0))) {
-          console.log('Content script not available or no data extracted, trying script injection...');
-          try {
-            const scriptData = await extractViaScript();
-            if (scriptData && (scriptData.text || (scriptData.imageUrls && scriptData.imageUrls.length > 0))) {
-              data = scriptData;
-            }
-          } catch (scriptErr) {
-            console.error('Script injection also failed:', scriptErr);
-          }
+          data = await extractViaScript();
         }
 
-        // If we have data, save it
-        if (data && (data.text || (data.imageUrls && data.imageUrls.length > 0))) {
-          await setPendingPrompt(data);
-          chrome.action.openPopup().catch(() => {});
-        } else {
-          // Final fallback: create empty prompt
-          console.log('No data extracted, creating empty prompt');
-          const fallbackPrompt: PendingPrompt = {
-            text: '',
+        if (data && (data.text || data.imageUrls?.length)) {
+          // Update with extracted data
+          await setPendingPrompt({
+            ...data,
             sourceUrl: tab.url || '',
             sourceTitle: tab.title,
             sourceType: detectSourceType(tab.url || ''),
-          };
-          await setPendingPrompt(fallbackPrompt);
-          chrome.action.openPopup().catch(() => {});
+            isLoading: false,
+          });
+        } else {
+          // Mark loading complete even if no data
+          await setPendingPrompt({ ...basicPrompt, isLoading: false });
         }
       } catch (err) {
-        console.error('Error in main extraction logic:', err);
-        // Create empty prompt on any error
-        const fallbackPrompt: PendingPrompt = {
-          text: '',
-          sourceUrl: tab.url || '',
-          sourceTitle: tab.title,
-          sourceType: detectSourceType(tab.url || ''),
-        };
-        await setPendingPrompt(fallbackPrompt);
-        chrome.action.openPopup().catch(() => {});
+        console.error('Background extraction error:', err);
+        await setPendingPrompt({ ...basicPrompt, isLoading: false });
       }
     })();
   }

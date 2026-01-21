@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getUser, getPendingPrompt, clearPendingPrompt } from '../lib/storage';
+import { getUser, getPendingPrompt, clearPendingPrompt, STORAGE_KEYS } from '../lib/storage';
 import { LoginForm } from './components/LoginForm';
 import { PromptForm } from './components/PromptForm';
 import { Header } from './components/Header';
@@ -13,6 +13,17 @@ export default function App() {
 
   useEffect(() => {
     loadInitialState();
+
+    // Listen for storage changes (for background data extraction updates)
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes[STORAGE_KEYS.PENDING_PROMPT]) {
+        const newPrompt = changes[STORAGE_KEYS.PENDING_PROMPT].newValue as PendingPrompt | null;
+        setPendingPrompt(newPrompt);
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
   const loadInitialState = async () => {

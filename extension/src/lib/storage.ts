@@ -1,6 +1,9 @@
 import type { PendingPrompt, User, AuthState } from '@/types';
 import { STORAGE_KEYS } from '@/types';
 
+// Re-export for convenience
+export { STORAGE_KEYS };
+
 // Get value from chrome storage
 export async function getStorage<T>(key: string): Promise<T | null> {
   return new Promise((resolve) => {

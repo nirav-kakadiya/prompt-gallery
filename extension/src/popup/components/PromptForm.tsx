@@ -27,6 +27,11 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
   const [hasImageOnly, setHasImageOnly] = useState(false); // Track if we only have image (no text)
 
   useEffect(() => {
+    // Skip processing while data is still loading in background
+    if (pendingPrompt.isLoading) {
+      return;
+    }
+
     // Parse the pending prompt
     const parsed = parsePrompt(pendingPrompt.text);
 
@@ -212,6 +217,19 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       onSaved();
     }, 800);
   };
+
+  // Show loading state while extracting data in background
+  if (pendingPrompt.isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-12 text-center">
+        <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Extracting content...</h3>
+        <p className="text-sm text-muted-foreground">
+          Getting prompt data from page
+        </p>
+      </div>
+    );
+  }
 
   if (success) {
     return (
