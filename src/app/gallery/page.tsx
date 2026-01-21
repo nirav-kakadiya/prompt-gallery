@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { MasonryGrid } from "@/components/ui/masonry-grid";
 
 function GalleryContent() {
   const searchParams = useSearchParams();
@@ -276,12 +277,19 @@ function GalleryContent() {
             )}
 
             {/* Loading state */}
-            {isLoading && (
+            {isLoading && viewMode === "masonry" && (
+              <MasonryGrid>
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="mb-6">
+                    <PromptCardSkeleton viewMode={viewMode} />
+                  </div>
+                ))}
+              </MasonryGrid>
+            )}
+            {isLoading && viewMode !== "masonry" && (
               <div
                 className={cn(
-                  viewMode === "masonry"
-                    ? "columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-6 space-y-6 block"
-                    : "grid gap-6",
+                  "grid gap-6",
                   viewMode === "grid" && (
                     gridColumns === 2 ? "grid-cols-1 sm:grid-cols-2" :
                     gridColumns === 3 ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" :
@@ -312,14 +320,29 @@ function GalleryContent() {
             )}
 
             {/* Prompts grid */}
-            {!isLoading && !error && prompts.length > 0 && (
+            {!isLoading && !error && prompts.length > 0 && viewMode === "masonry" && (
+              <TooltipProvider>
+                <MasonryGrid>
+                  {prompts.map((prompt, index) => (
+                    <motion.div
+                      key={prompt.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.5) }}
+                      className="mb-6"
+                    >
+                      <PromptCard prompt={prompt} viewMode={viewMode} />
+                    </motion.div>
+                  ))}
+                </MasonryGrid>
+              </TooltipProvider>
+            )}
+            {!isLoading && !error && prompts.length > 0 && viewMode !== "masonry" && (
               <TooltipProvider>
                 <motion.div
                   layout
                   className={cn(
-                    viewMode === "masonry"
-                      ? "columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-6 space-y-6 block"
-                      : "grid gap-6",
+                    "grid gap-6",
                     viewMode === "grid" && (
                       gridColumns === 2 ? "grid-cols-1 sm:grid-cols-2" :
                       gridColumns === 3 ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" :
@@ -339,8 +362,7 @@ function GalleryContent() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.3, delay: index * 0.02 }}
-                        className={cn(viewMode === "masonry" && "break-inside-avoid mb-6")}
+                        transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.5) }}
                       >
                         <PromptCard prompt={prompt} viewMode={viewMode} />
                       </motion.div>

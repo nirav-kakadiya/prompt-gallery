@@ -2,14 +2,23 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Edit, Settings } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Edit, Settings, LayoutGrid, List, Columns2, Grid3X3 } from "lucide-react";
 import { PageLayout, EmptyState } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/avatar";
 import { PromptCard, PromptCardSkeleton } from "@/components/cards/prompt-card";
 import { useAuthStore } from "@/hooks/use-auth";
+import { usePreferencesStore } from "@/store";
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { MasonryGrid } from "@/components/ui/masonry-grid";
 import Link from "next/link";
 
 async function fetchUserPrompts(userId: string) {
@@ -28,6 +37,8 @@ export default function ProfilePage() {
     }
   }, [isAuthenticated, router]);
 
+  const { viewMode, setViewMode, gridColumns, setGridColumns } = usePreferencesStore();
+
   const { data, isLoading } = useQuery({
     queryKey: ["user-prompts", user?.id],
     queryFn: () => fetchUserPrompts(user!.id),
@@ -36,6 +47,24 @@ export default function ProfilePage() {
 
   const prompts = data?.prompts || [];
   const totalCount = data?.total || 0;
+
+  const getGridClasses = () => {
+    if (viewMode === "list") {
+      return "grid grid-cols-1 gap-6";
+    }
+    if (viewMode === "compact") {
+      return "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4";
+    }
+    // Grid mode with dynamic columns
+    const colClasses: Record<number, string> = {
+      2: "grid-cols-1 sm:grid-cols-2",
+      3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+      4: "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+      5: "grid-cols-2 lg:grid-cols-4 xl:grid-cols-5",
+      6: "grid-cols-3 lg:grid-cols-5 xl:grid-cols-6",
+    };
+    return `grid gap-6 ${colClasses[gridColumns] || colClasses[4]}`;
+  };
 
   if (!isAuthenticated || !user) {
     return null;
@@ -87,12 +116,80 @@ export default function ProfilePage() {
 
         {/* User's Prompts */}
         <div>
-          <h2 className="text-xl font-semibold mb-6">Your Prompts</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h2 className="text-xl font-semibold">Your Prompts</h2>
 
-          {isLoading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Layout Controls */}
+            <TooltipProvider>
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/50 border backdrop-blur-sm">
+                {[
+                  { mode: "grid", icon: LayoutGrid, label: "Grid" },
+                  { mode: "masonry", icon: Columns2, label: "Masonry" },
+                  { mode: "compact", icon: Grid3X3, label: "Compact" },
+                  { mode: "list", icon: List, label: "List" },
+                ].map((item) => (
+                  <Tooltip key={item.mode}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setViewMode(item.mode as "grid" | "masonry" | "compact" | "list")}
+                        className={cn(
+                          "p-2 rounded-lg transition-all duration-200",
+                          viewMode === item.mode
+                            ? "bg-background shadow-sm text-primary scale-110"
+                            : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                        )}
+                        aria-label={`${item.label} view`}
+                      >
+                        <item.icon className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{item.label} view</TooltipContent>
+                  </Tooltip>
+                ))}
+
+                <AnimatePresence>
+                  {viewMode === "grid" && (
+                    <motion.div
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 border-l ml-1 h-6 overflow-hidden"
+                    >
+                      <span className="hidden min-[450px]:inline text-[10px] font-black uppercase tracking-tighter text-muted-foreground/40 whitespace-nowrap">
+                        Size
+                      </span>
+                      <input
+                        type="range"
+                        min="2"
+                        max="6"
+                        step="1"
+                        value={gridColumns}
+                        onChange={(e) => setGridColumns(parseInt(e.target.value))}
+                        className="w-12 min-[400px]:w-16 sm:w-20 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary hover:accent-primary/80 transition-all"
+                      />
+                      <div className="flex items-center justify-center w-5 h-5 rounded bg-primary/10 text-[11px] font-bold text-primary shrink-0">
+                        {gridColumns}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </TooltipProvider>
+          </div>
+
+          {isLoading && viewMode === "masonry" && (
+            <MasonryGrid>
               {Array.from({ length: 6 }).map((_, i) => (
-                <PromptCardSkeleton key={i} />
+                <div key={i} className="mb-6">
+                  <PromptCardSkeleton viewMode={viewMode} />
+                </div>
+              ))}
+            </MasonryGrid>
+          )}
+          {isLoading && viewMode !== "masonry" && (
+            <div className={getGridClasses()}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <PromptCardSkeleton key={i} viewMode={viewMode} />
               ))}
             </div>
           )}
@@ -110,8 +207,23 @@ export default function ProfilePage() {
             />
           )}
 
-          {!isLoading && prompts.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {!isLoading && prompts.length > 0 && viewMode === "masonry" && (
+            <MasonryGrid>
+              {(prompts as Array<Parameters<typeof PromptCard>[0]["prompt"]>).map((prompt, index) => (
+                <motion.div
+                  key={prompt.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(index * 0.02, 0.5) }}
+                  className="mb-6"
+                >
+                  <PromptCard prompt={prompt} viewMode={viewMode} />
+                </motion.div>
+              ))}
+            </MasonryGrid>
+          )}
+          {!isLoading && prompts.length > 0 && viewMode !== "masonry" && (
+            <div className={getGridClasses()}>
               {(prompts as Array<Parameters<typeof PromptCard>[0]["prompt"]>).map((prompt, index) => (
                 <motion.div
                   key={prompt.id}
@@ -119,7 +231,7 @@ export default function ProfilePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(index * 0.02, 0.5) }}
                 >
-                  <PromptCard prompt={prompt} />
+                  <PromptCard prompt={prompt} viewMode={viewMode} />
                 </motion.div>
               ))}
             </div>
