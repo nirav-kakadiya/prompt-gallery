@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2, Pencil, FolderPlus } from "lucide-react";
 import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from "@/lib/utils";
@@ -68,6 +69,7 @@ export function PromptCard({
   viewMode = "grid",
 }: PromptCardProps) {
   const { user } = useAuthStore();
+  const router = useRouter();
   const deletePromptMutation = useDeletePrompt();
   const [isLiked, setIsLiked] = React.useState(prompt.isLiked || false);
   const [likeCount, setLikeCount] = React.useState(prompt.likeCount);
@@ -79,12 +81,24 @@ export function PromptCard({
   const [showAddToCollectionModal, setShowAddToCollectionModal] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [imageLoaded, setImageLoaded] = React.useState(false);
+  const prefetchedRef = React.useRef(false);
 
   const isOwner = user?.id === prompt.author?.id;
+  const promptUrl = `/prompts/${prompt.slug}`;
+
+  // Prefetch on hover for faster navigation
+  const handleMouseEnter = React.useCallback(() => {
+    setIsHovered(true);
+    if (!prefetchedRef.current) {
+      router.prefetch(promptUrl);
+      prefetchedRef.current = true;
+    }
+  }, [router, promptUrl]);
 
   React.useEffect(() => {
     setImageError(false);
     setImageLoaded(false);
+    prefetchedRef.current = false; // Reset prefetch when prompt changes
   }, [prompt.id, prompt.thumbnailUrl, prompt.imageUrl]);
 
   const typeConfig = PROMPT_TYPES[prompt.type] || PROMPT_TYPES["text-to-image"];
@@ -210,11 +224,11 @@ export function PromptCard({
         transition={{ duration: 0.3 }}
         whileHover={{ y: -4 }}
         className={cn("group relative", isList && "w-full")}
-        onMouseEnter={() => setIsHovered(true)}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setIsHovered(false)}
       >
         <Link
-          href={`/prompts/${prompt.slug}`}
+          href={promptUrl}
           scroll={false}
           onClick={(e) => {
             if (onClick) {

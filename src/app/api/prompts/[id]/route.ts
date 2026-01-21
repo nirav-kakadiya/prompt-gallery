@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { memoryCache, cacheTTL } from "@/lib/cache/memory-cache";
 
 // GET /api/prompts/[id] - Get single prompt
 export async function GET(
@@ -9,36 +10,66 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const cacheKey = `api:prompt:${id}`;
 
-    // Try to find by ID or slug
-    const prompt = await prisma.prompt.findFirst({
-      where: {
-        OR: [{ id }, { slug: id }],
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatarUrl: true,
-            bio: true,
-            promptCount: true,
+    // Try cache first
+    const cached = await memoryCache.getOrFetch(
+      cacheKey,
+      async () => {
+        // Try to find by ID or slug
+        const prompt = await prisma.prompt.findFirst({
+          where: {
+            OR: [{ id }, { slug: id }],
           },
-        },
-        promptTags: {
           include: {
-            tag: {
+            author: {
               select: {
+                id: true,
                 name: true,
+                username: true,
+                avatarUrl: true,
+                bio: true,
+                promptCount: true,
+              },
+            },
+            promptTags: {
+              include: {
+                tag: {
+                  select: {
+                    name: true,
+                  },
+                },
               },
             },
           },
-        },
-      },
-    });
+        });
 
-    if (!prompt) {
+        if (!prompt) return null;
+
+        // Get related prompts in parallel with returning (don't block)
+        const relatedPrompts = await prisma.prompt.findMany({
+          where: {
+            id: { not: prompt.id },
+            status: "published",
+            type: prompt.type,
+          },
+          take: 4,
+          orderBy: { copyCount: "desc" },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            thumbnailUrl: true,
+            type: true,
+          },
+        });
+
+        return { prompt, relatedPrompts };
+      },
+      cacheTTL.prompts
+    );
+
+    if (!cached) {
       return NextResponse.json(
         {
           success: false,
@@ -51,34 +82,13 @@ export async function GET(
       );
     }
 
-    // Buffer view count (using raw query to call Supabase function)
-    try {
-      await prisma.$executeRaw`SELECT buffer_view(${prompt.id}::uuid)`;
-    } catch {
-      // Fallback: increment directly if function doesn't exist
-      await prisma.prompt.update({
-        where: { id: prompt.id },
-        data: { viewCount: { increment: 1 } },
-      });
-    }
+    const { prompt, relatedPrompts } = cached;
 
-    // Get related prompts (same type)
-    const relatedPrompts = await prisma.prompt.findMany({
-      where: {
-        id: { not: prompt.id },
-        status: "published",
-        type: prompt.type,
-      },
-      take: 6,
-      orderBy: { copyCount: "desc" },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        thumbnailUrl: true,
-        type: true,
-      },
-    });
+    // Fire and forget view count update (don't await)
+    prisma.prompt.update({
+      where: { id: prompt.id },
+      data: { viewCount: { increment: 1 } },
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,

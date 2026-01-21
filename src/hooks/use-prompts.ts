@@ -171,7 +171,7 @@ export function useInfinitePrompts() {
         tags: tags.length > 0 ? tags : undefined,
         sortBy: sortBy as PromptFilters["sortBy"],
         page: pageParam,
-        limit: 12,
+        limit: 24, // Larger page size for fewer API calls
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
@@ -180,7 +180,9 @@ export function useInfinitePrompts() {
       }
       return undefined;
     },
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data is stale after this
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache
+    refetchOnWindowFocus: false, // Don't refetch when tab regains focus
   });
 }
 
@@ -189,6 +191,8 @@ export function usePrompt(id: string) {
     queryKey: ["prompt", id],
     queryFn: () => fetchPromptById(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 }
 

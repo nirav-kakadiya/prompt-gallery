@@ -24,7 +24,8 @@
       "Bash(source .env)",
       "Bash(taskkill //F //PID 166408)",
       "Bash(sqlite3:*)",
-      "Bash(npm run restore-data:*)"
+      "Bash(npm run restore-data:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

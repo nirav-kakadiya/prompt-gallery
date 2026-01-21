@@ -37,6 +37,7 @@ model Profile {
   reports             Report[]
 
   @@map("profiles")
+
 }
 
 // Main Prompt model
@@ -78,7 +79,13 @@ model Prompt {
   @@index([authorId])
   @@index([createdAt])
   @@index([slug])
+  @@index([category])
+  @@index([style])
+  @@index([copyCount(sort: Desc)])
+  @@index([status, type])
+  @@index([status, createdAt(sort: Desc)])
   @@map("prompts")
+
 }
 
 // Tag model
@@ -94,6 +101,7 @@ model Tag {
   promptTags  PromptTag[]
 
   @@map("tags")
+
 }
 
 // Junction table for Prompt <-> Tag
@@ -107,6 +115,7 @@ model PromptTag {
 
   @@id([promptId, tagId])
   @@map("prompt_tags")
+
 }
 
 // Category model
@@ -122,6 +131,7 @@ model Category {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("categories")
+
 }
 
 // Like model for user interactions
@@ -136,6 +146,7 @@ model Like {
 
   @@unique([userId, promptId])
   @@map("likes")
+
 }
 
 // Collection model for organizing prompts
@@ -160,6 +171,7 @@ model Collection {
   @@index([isPublic])
   @@index([ownerId])
   @@map("collections")
+
 }
 
 // Junction table for Collection <-> Prompt
@@ -174,6 +186,7 @@ model CollectionPrompt {
 
   @@id([collectionId, promptId])
   @@map("collection_prompts")
+
 }
 
 // Saved Collections - tracks which users have saved which public collections
@@ -187,6 +200,7 @@ model SavedCollection {
 
   @@id([userId, collectionId])
   @@map("saved_collections")
+
 }
 
 // View buffer for batched updates
@@ -199,6 +213,7 @@ model ViewBuffer {
   @@index([createdAt])
   @@index([promptId])
   @@map("view_buffer")
+
 }
 
 // Copy buffer for batched updates
@@ -211,6 +226,7 @@ model CopyBuffer {
   @@index([createdAt])
   @@index([promptId])
   @@map("copy_buffer")
+
 }
 
 // API Key for extension authentication
@@ -230,6 +246,7 @@ model ApiKey {
   @@index([userId])
   @@index([keyPrefix])
   @@map("api_keys")
+
 }
 
 // Contact message model
@@ -246,6 +263,7 @@ model ContactMessage {
   @@index([status])
   @@index([createdAt])
   @@map("contact_messages")
+
 }
 
 // Report model for reporting prompts
@@ -265,4 +283,5 @@ model Report {
   @@index([promptId])
   @@index([status])
   @@map("reports")
+
 }
