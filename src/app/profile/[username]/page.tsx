@@ -38,7 +38,7 @@ export default async function PublicProfilePage({ params }: Props) {
     include: {
       prompts: {
         where: { status: 'published' }, // Only show published prompts
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: 12,
         include: {
           author: { select: { name: true, username: true, avatarUrl: true } },

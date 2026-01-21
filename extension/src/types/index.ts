@@ -108,5 +108,6 @@ export const STORAGE_KEYS = {
   SETTINGS: 'settings',
 } as const;
 
-// API base URL
+// API base URL - change to production URL when deploying extension
+// export const API_BASE_URL = 'http://localhost:3000';
 export const API_BASE_URL = 'https://prompt-gallery-six.vercel.app';

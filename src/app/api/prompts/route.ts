@@ -68,21 +68,24 @@ export async function GET(request: NextRequest) {
           };
         }
 
-        // Build orderBy
-        let orderBy: Record<string, string> = { createdAt: "desc" };
+        // Build orderBy - use array for stable sorting with secondary sort by id
+        let orderBy: Record<string, string>[] = [{ createdAt: "desc" }, { id: "desc" }];
         switch (sortBy) {
+          case "newest":
+            orderBy = [{ createdAt: "desc" }, { id: "desc" }];
+            break;
           case "oldest":
-            orderBy = { createdAt: "asc" };
+            orderBy = [{ createdAt: "asc" }, { id: "asc" }];
             break;
           case "popular":
           case "most_copied":
-            orderBy = { copyCount: "desc" };
+            orderBy = [{ copyCount: "desc" }, { createdAt: "desc" }];
             break;
           case "most_liked":
-            orderBy = { likeCount: "desc" };
+            orderBy = [{ likeCount: "desc" }, { createdAt: "desc" }];
             break;
           case "alphabetical":
-            orderBy = { title: "asc" };
+            orderBy = [{ title: "asc" }, { createdAt: "desc" }];
             break;
         }
 
