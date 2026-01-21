@@ -143,7 +143,7 @@ export function usePrompts() {
         tags: tags.length > 0 ? tags : undefined,
         sortBy: sortBy as PromptFilters["sortBy"],
       }),
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000, // 30 seconds - matches server cache
   });
 }
 
@@ -180,8 +180,8 @@ export function useInfinitePrompts() {
       }
       return undefined;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - data is stale after this
-    gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache
+    staleTime: 30 * 1000, // 30 seconds - data is stale after this (matches server cache)
+    gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
     refetchOnWindowFocus: false, // Don't refetch when tab regains focus
   });
 }

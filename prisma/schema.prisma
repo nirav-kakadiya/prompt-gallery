@@ -23,8 +23,6 @@ model Profile {
   promptCount         Int       @default(0) @map("prompt_count")
   totalCopies         Int       @default(0) @map("total_copies")
   totalLikes          Int       @default(0) @map("total_likes")
-  legacyUserId        String?   @map("legacy_user_id")
-  migratedFromSqlite  Boolean   @default(false) @map("migrated_from_sqlite")
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -57,8 +55,6 @@ model Prompt {
   sourceUrl       String?   @map("source_url")
   sourceType      String?   @map("source_type")
   authorId        String?   @map("author_id") @db.Uuid
-  legacyPromptId  String?   @map("legacy_prompt_id")
-  legacyAuthorEmail String? @map("legacy_author_email")
   metadata        Json      @default("{}")
   viewCount       Int       @default(0) @map("view_count")
   copyCount       Int       @default(0) @map("copy_count")
@@ -157,8 +153,6 @@ model Collection {
   coverImageUrl   String?  @map("cover_image_url")
   isPublic        Boolean  @default(true) @map("is_public")
   ownerId         String?  @map("owner_id") @db.Uuid
-  legacyCollectionId String? @map("legacy_collection_id")
-  legacyOwnerEmail   String? @map("legacy_owner_email")
   promptCount     Int      @default(0) @map("prompt_count")
   saveCount       Int      @default(0) @map("save_count")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz

@@ -39,7 +39,7 @@ export default async function PublicProfilePage({ params }: Props) {
       prompts: {
         where: { status: 'published' }, // Only show published prompts
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take: 12,
+        take: 50, // Show more prompts on public profile
         include: {
           author: { select: { name: true, username: true, avatarUrl: true } },
           promptTags: { select: { tag: { select: { name: true } } } },

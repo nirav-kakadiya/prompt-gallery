@@ -13,9 +13,9 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 async function fetchUserPrompts(userId: string) {
-  const response = await fetch(`/api/prompts?authorId=${userId}`);
+  const response = await fetch(`/api/prompts?authorId=${userId}&pageSize=500&sort=newest`);
   const data = await response.json();
-  return data.success ? data.data : [];
+  return data.success ? { prompts: data.data, total: data.meta.total } : { prompts: [], total: 0 };
 }
 
 export default function ProfilePage() {
@@ -28,11 +28,14 @@ export default function ProfilePage() {
     }
   }, [isAuthenticated, router]);
 
-  const { data: prompts, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["user-prompts", user?.id],
     queryFn: () => fetchUserPrompts(user!.id),
     enabled: !!user?.id,
   });
+
+  const prompts = data?.prompts || [];
+  const totalCount = data?.total || 0;
 
   if (!isAuthenticated || !user) {
     return null;
@@ -67,7 +70,7 @@ export default function ProfilePage() {
             {/* Stats */}
             <div className="flex gap-6 mt-6">
               <div className="text-center">
-                <p className="text-2xl font-bold">{prompts?.length || 0}</p>
+                <p className="text-2xl font-bold">{totalCount}</p>
                 <p className="text-sm text-muted-foreground">Prompts</p>
               </div>
               <div className="text-center">
@@ -94,7 +97,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {!isLoading && prompts?.length === 0 && (
+          {!isLoading && prompts.length === 0 && (
             <EmptyState
               icon={<Edit className="w-8 h-8 text-muted-foreground" />}
               title="No prompts yet"
@@ -107,14 +110,14 @@ export default function ProfilePage() {
             />
           )}
 
-          {!isLoading && prompts?.length > 0 && (
+          {!isLoading && prompts.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {(prompts as Array<Parameters<typeof PromptCard>[0]["prompt"]>).map((prompt, index) => (
                 <motion.div
                   key={prompt.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: Math.min(index * 0.02, 0.5) }}
                 >
                   <PromptCard prompt={prompt} />
                 </motion.div>

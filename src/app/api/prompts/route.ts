@@ -18,12 +18,13 @@ export async function GET(request: NextRequest) {
     const tags = searchParams.getAll("tag");
     const category = searchParams.get("category");
     const style = searchParams.get("style");
+    const authorId = searchParams.get("authorId");
     const sortBy = (searchParams.get("sort") || "newest") as SortOption;
     const page = parseInt(searchParams.get("page") || "1");
-    const pageSize = Math.min(parseInt(searchParams.get("pageSize") || "20"), 100);
+    const pageSize = Math.min(parseInt(searchParams.get("pageSize") || "20"), 500);
 
     // Create cache key from all params
-    const cacheKey = cacheKeys.prompts({ query, types, tags, category, style, sortBy, page, pageSize });
+    const cacheKey = cacheKeys.prompts({ query, types, tags, category, style, authorId, sortBy, page, pageSize });
 
     // Try to get from cache first
     const result = await memoryCache.getOrFetch(
@@ -66,6 +67,11 @@ export async function GET(request: NextRequest) {
               }
             }
           };
+        }
+
+        // Author filter
+        if (authorId) {
+          where.authorId = authorId;
         }
 
         // Build orderBy - use array for stable sorting with secondary sort by id
