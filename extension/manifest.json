@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "description": "Save AI prompts from Reddit, X/Twitter, or any webpage to your Prompt Gallery",
   "icons": {
-    "16": "icons/icon16.svg",
-    "48": "icons/icon48.svg",
-    "128": "icons/icon128.svg"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "permissions": [
     "contextMenus",
@@ -28,9 +28,9 @@
   "action": {
     "default_popup": "src/popup/index.html",
     "default_icon": {
-      "16": "icons/icon16.svg",
-      "48": "icons/icon48.svg",
-      "128": "icons/icon128.svg"
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     },
     "default_title": "Prompt Gallery Saver"
   },

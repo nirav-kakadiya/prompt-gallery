@@ -25,7 +25,9 @@
       "Bash(taskkill //F //PID 166408)",
       "Bash(sqlite3:*)",
       "Bash(npm run restore-data:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(node -e:*)",
+      "Bash(powershell -Command \"Compress-Archive -Path ''dist/*'' -DestinationPath ''prompt-gallery-extension.zip'' -Force\")"
     ]
   }
 }
