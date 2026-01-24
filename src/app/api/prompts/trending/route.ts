@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
         const prompts = await prisma.prompt.findMany({
           where: {
             status: "published",
+            isPublic: true,
             ...(dateFilter && { createdAt: { gte: dateFilter } }),
           },
           orderBy,

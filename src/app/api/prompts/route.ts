@@ -12,6 +12,7 @@ import type { PromptType, SortOption } from "@/types";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const user = await getCurrentUser();
 
     // Parse query parameters
     const query = searchParams.get("q") || "";
@@ -24,8 +25,12 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = Math.min(parseInt(searchParams.get("pageSize") || "20"), 500);
 
-    // Create cache key from all params
-    const cacheKey = cacheKeys.prompts({ query, types, tags, category, style, authorId, sortBy, page, pageSize });
+    // Check if user is viewing their own prompts
+    const isViewingOwnPrompts = authorId && user?.id === authorId;
+
+    // Create cache key from all params (include user context for proper caching)
+    const cacheKey = cacheKeys.prompts({ query, types, tags, category, style, authorId, sortBy, page, pageSize }) +
+      (isViewingOwnPrompts ? `:owner` : `:public`);
 
     // Try to get from cache first
     const result = await memoryCache.getOrFetch(
@@ -34,6 +39,8 @@ export async function GET(request: NextRequest) {
         // Build where clause
         const where: Record<string, unknown> = {
           status: "published",
+          // Show private prompts only if viewing own profile
+          ...(isViewingOwnPrompts ? {} : { isPublic: true }),
         };
 
         // Search query
@@ -148,6 +155,7 @@ export async function GET(request: NextRequest) {
           copyCount: prompt.copyCount,
           likeCount: prompt.likeCount,
           viewCount: prompt.viewCount,
+          isPublic: prompt.isPublic,
           createdAt: prompt.createdAt.toISOString(),
         }));
 

@@ -10,7 +10,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const cacheKey = `api:prompt:${id}`;
+    const user = await getCurrentUser();
+    const cacheKey = `api:prompt:${id}:${user?.id || "anon"}`;
 
     // Try cache first
     const cached = await memoryCache.getOrFetch(
@@ -45,6 +46,11 @@ export async function GET(
         });
 
         if (!prompt) return null;
+
+        // Check visibility: private prompts only visible to author
+        if (!prompt.isPublic && prompt.authorId !== user?.id) {
+          return { restricted: true };
+        }
 
         // Get related prompts in parallel with returning (don't block)
         const relatedPrompts = await prisma.prompt.findMany({
@@ -83,7 +89,22 @@ export async function GET(
       );
     }
 
-    const { prompt, relatedPrompts } = cached;
+    // Handle private prompt accessed by non-owner
+    if ("restricted" in cached && cached.restricted) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "This prompt is private",
+          },
+        },
+        { status: 403 }
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { prompt, relatedPrompts } = cached as any;
 
     // Fire and forget view count update (don't await)
     prisma.prompt.update({
@@ -104,7 +125,7 @@ export async function GET(
         thumbnailUrl: prompt.thumbnailUrl,
         videoUrl: prompt.videoUrl,
         blurhash: prompt.blurhash,
-        tags: prompt.promptTags.map((pt) => pt.tag.name),
+        tags: prompt.promptTags.map((pt: { tag: { name: string } }) => pt.tag.name),
         category: prompt.category,
         style: prompt.style,
         author: prompt.author ? {
