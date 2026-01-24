@@ -97,8 +97,8 @@ export default function DiscoverCollectionsPage() {
       />
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-8">
-        <div className="flex-1">
+      <div className="flex flex-col gap-4 mb-8">
+        <div className="w-full sm:max-w-md">
           <Input
             placeholder="Search collections..."
             value={searchQuery}
@@ -106,7 +106,7 @@ export default function DiscoverCollectionsPage() {
             icon={<Search className="w-4 h-4" />}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {sortOptions.map((option) => {
             const Icon = option.icon;
             return (
@@ -115,9 +115,10 @@ export default function DiscoverCollectionsPage() {
                 variant={sort === option.value ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSort(option.value)}
+                className="text-xs sm:text-sm h-8 px-2 sm:px-3"
               >
-                <Icon className="w-4 h-4 mr-2" />
-                {option.label}
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">{option.label}</span>
               </Button>
             );
           })}
@@ -147,7 +148,7 @@ export default function DiscoverCollectionsPage() {
       {/* Collections grid */}
       {!isLoading && collections.length > 0 && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {collections.map((collection, index) => (
               <motion.div
                 key={collection.id}
@@ -156,7 +157,7 @@ export default function DiscoverCollectionsPage() {
                 transition={{ delay: index * 0.05 }}
               >
                 <Link href={`/collections/${collection.id}`}>
-                  <div className="group p-6 rounded-2xl border bg-card hover:shadow-lg transition-all relative">
+                  <div className="group p-4 sm:p-6 rounded-2xl border bg-card hover:shadow-lg transition-all relative">
                     {/* Save button */}
                     {user && collection.ownerId !== user.id && (
                       <button

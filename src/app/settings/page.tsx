@@ -177,9 +177,9 @@ export default function SettingsPage() {
           >
             {activeTab === "profile" && (
               <>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
                   <UserAvatar user={user} size="xl" />
-                  <div>
+                  <div className="text-center sm:text-left">
                     <Button variant="outline" disabled>
                       Change Avatar
                     </Button>
@@ -321,13 +321,13 @@ export default function SettingsPage() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Choose your preferred color scheme
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {(["light", "dark", "system"] as const).map((t) => (
                       <button
                         key={t}
                         onClick={() => setTheme(t)}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border",
+                          "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-all border",
                           theme === t
                             ? "bg-primary text-primary-foreground border-primary"
                             : "bg-background border-input hover:bg-accent hover:text-accent-foreground"

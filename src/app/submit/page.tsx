@@ -402,7 +402,7 @@ export default function SubmitPage() {
             <label className="block text-sm font-medium mb-3">
               Prompt Type *
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
               {(Object.keys(PROMPT_TYPES) as PromptType[]).map((type) => {
                 const config = PROMPT_TYPES[type];
                 const Icon = typeIcons[type];

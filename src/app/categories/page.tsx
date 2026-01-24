@@ -40,7 +40,7 @@ export default function CategoriesPage() {
 
         {/* Loading state */}
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6 pb-16">
             {Array.from({ length: 8 }).map((_, i) => (
               <CategoryCardSkeleton key={i} />
             ))}
@@ -67,7 +67,7 @@ export default function CategoriesPage() {
 
         {/* Categories grid */}
         {!isLoading && !error && categories && categories.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6 pb-16">
             {categories.map((category, index) => (
               <CategoryCard key={category.id} category={category} index={index} />
             ))}

@@ -289,7 +289,7 @@ function GalleryContent() {
             {isLoading && viewMode !== "masonry" && (
               <div
                 className={cn(
-                  "grid gap-6",
+                  "grid gap-4 sm:gap-6",
                   viewMode === "grid" && (
                     gridColumns === 2 ? "grid-cols-1 sm:grid-cols-2" :
                     gridColumns === 3 ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" :
@@ -342,7 +342,7 @@ function GalleryContent() {
                 <motion.div
                   layout
                   className={cn(
-                    "grid gap-6",
+                    "grid gap-4 sm:gap-6",
                     viewMode === "grid" && (
                       gridColumns === 2 ? "grid-cols-1 sm:grid-cols-2" :
                       gridColumns === 3 ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" :

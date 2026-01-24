@@ -180,7 +180,7 @@ export default function CollectionsPage() {
 
         {/* Collections grid */}
         {!isLoading && collections && collections.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6 pb-16">
             {collections.map((collection, index) => (
               <motion.div
                 key={collection.id}
@@ -189,7 +189,7 @@ export default function CollectionsPage() {
                 transition={{ delay: index * 0.05 }}
               >
                 <Link href={`/collections/${collection.id}`}>
-                  <div className="group p-6 rounded-2xl border bg-card hover:shadow-lg transition-all">
+                  <div className="group p-4 sm:p-6 rounded-2xl border bg-card hover:shadow-lg transition-all">
                     {/* Cover image or thumbnails */}
                     <div className="aspect-video rounded-xl bg-muted mb-4 overflow-hidden relative">
                       {collection.prompts && collection.prompts.length > 0 ? (

@@ -71,7 +71,7 @@ function LoginForm() {
 
           {/* Header */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold">Welcome back</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Welcome back</h1>
             <p className="mt-2 text-muted-foreground">
               Sign in to your account to continue
             </p>

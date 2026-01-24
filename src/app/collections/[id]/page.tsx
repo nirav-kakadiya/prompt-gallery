@@ -157,10 +157,10 @@ export default function CollectionDetailPage() {
         </Link>
 
         {/* Collection header */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold">{collection.name}</h1>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold">{collection.name}</h1>
               {collection.isPublic ? (
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <Globe className="w-3 h-3" />
@@ -198,7 +198,7 @@ export default function CollectionDetailPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {canSave && (
               <Button
                 variant={isSaved ? "default" : "outline"}
@@ -253,7 +253,7 @@ export default function CollectionDetailPage() {
 
         {/* Prompts grid */}
         {prompts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {prompts.map((prompt) => (
               <PromptCard key={prompt.id} prompt={prompt} />
             ))}

@@ -78,35 +78,36 @@ export default function TrendingPage() {
         />
 
         {/* Period and Sort Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <div className="flex flex-col gap-4 mb-8">
           {/* Period selector */}
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2 p-1 rounded-lg bg-muted w-fit">
             {periods.map((p) => (
               <button
                 key={p.value}
                 onClick={() => setPeriod(p.value)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  "flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all",
                   period === p.value
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <p.icon className="w-4 h-4" />
-                {p.label}
+                <p.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden min-[400px]:inline">{p.label}</span>
               </button>
             ))}
           </div>
 
           {/* Sort selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Sort by:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs sm:text-sm text-muted-foreground">Sort by:</span>
             {sortOptions.map((option) => (
               <Button
                 key={option.value}
                 variant={sortBy === option.value ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSortBy(option.value)}
+                className="text-xs sm:text-sm h-8 px-2 sm:px-3"
               >
                 {option.label}
               </Button>
@@ -138,7 +139,7 @@ export default function TrendingPage() {
 
         {/* Loading state */}
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6 pb-16">
             {Array.from({ length: 10 }).map((_, i) => (
               <PromptCardSkeleton key={i} />
             ))}
@@ -170,7 +171,7 @@ export default function TrendingPage() {
 
         {/* Prompts grid */}
         {!isLoading && !error && data?.prompts && data.prompts.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6 pb-16">
             {data.prompts.map((prompt, index) => (
               <motion.div
                 key={prompt.id}

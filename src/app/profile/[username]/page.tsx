@@ -69,16 +69,16 @@ export default async function PublicProfilePage({ params }: Props) {
     <PageLayout>
       <div className="pb-16">
         {/* Profile Header */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-12">
-          <Avatar className="w-24 h-24">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-8 sm:mb-12">
+          <Avatar className="w-20 h-20 sm:w-24 sm:h-24">
             <AvatarImage src={profile.avatarUrl || undefined} />
-            <AvatarFallback className="text-2xl">
+            <AvatarFallback className="text-xl sm:text-2xl">
               {(profile.name || profile.username || "U").charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
 
           <div className="text-center sm:text-left flex-1">
-            <h1 className="text-3xl font-bold mb-1">{profile.name || profile.username}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1">{profile.name || profile.username}</h1>
             <p className="text-muted-foreground mb-3">@{profile.username}</p>
 
             {profile.bio && (
@@ -100,31 +100,31 @@ export default async function PublicProfilePage({ params }: Props) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
-          <div className="p-4 rounded-xl bg-muted/50 text-center">
-            <div className="text-2xl font-bold">{profile._count.prompts}</div>
-            <div className="text-sm text-muted-foreground">Prompts</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-12">
+          <div className="p-3 sm:p-4 rounded-xl bg-muted/50 text-center">
+            <div className="text-xl sm:text-2xl font-bold">{profile._count.prompts}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">Prompts</div>
           </div>
-          <div className="p-4 rounded-xl bg-muted/50 text-center">
-            <div className="text-2xl font-bold flex items-center justify-center gap-1">
-              <Eye className="w-5 h-5" />
+          <div className="p-3 sm:p-4 rounded-xl bg-muted/50 text-center">
+            <div className="text-xl sm:text-2xl font-bold flex items-center justify-center gap-1">
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
               {(stats._sum.viewCount || 0).toLocaleString()}
             </div>
-            <div className="text-sm text-muted-foreground">Views</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">Views</div>
           </div>
-          <div className="p-4 rounded-xl bg-muted/50 text-center">
-            <div className="text-2xl font-bold flex items-center justify-center gap-1">
-              <Copy className="w-5 h-5" />
+          <div className="p-3 sm:p-4 rounded-xl bg-muted/50 text-center">
+            <div className="text-xl sm:text-2xl font-bold flex items-center justify-center gap-1">
+              <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
               {(stats._sum.copyCount || 0).toLocaleString()}
             </div>
-            <div className="text-sm text-muted-foreground">Copies</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">Copies</div>
           </div>
-          <div className="p-4 rounded-xl bg-muted/50 text-center">
-            <div className="text-2xl font-bold flex items-center justify-center gap-1">
-              <Heart className="w-5 h-5" />
+          <div className="p-3 sm:p-4 rounded-xl bg-muted/50 text-center">
+            <div className="text-xl sm:text-2xl font-bold flex items-center justify-center gap-1">
+              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
               {(stats._sum.likeCount || 0).toLocaleString()}
             </div>
-            <div className="text-sm text-muted-foreground">Likes</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">Likes</div>
           </div>
         </div>
 
@@ -133,7 +133,7 @@ export default async function PublicProfilePage({ params }: Props) {
           <h2 className="text-xl font-semibold mb-6">Prompts by {profile.name || profile.username}</h2>
 
           {profile.prompts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {profile.prompts.map((prompt) => (
                 <PromptCard key={prompt.id} prompt={prompt as unknown as Parameters<typeof PromptCard>[0]["prompt"]} />
               ))}
