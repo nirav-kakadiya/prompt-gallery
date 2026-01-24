@@ -266,6 +266,7 @@ export function PromptCard({
         className={cn("group relative", isList && "w-full")}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setIsHovered(false)}
+        aria-label={`${prompt.title} by ${prompt.author?.name || "Anonymous"}`}
       >
         <Link
           href={promptUrl}
@@ -287,10 +288,14 @@ export function PromptCard({
             )}
           >
             {/* Image Container */}
-            <div className={cn(
-              "relative overflow-hidden bg-muted",
-              isList ? "w-48 sm:w-64 shrink-0" : isMasonry ? "h-auto min-h-[150px]" : "aspect-4/3"
-            )}>
+            <div
+              className={cn(
+                "relative overflow-hidden bg-muted",
+                isList ? "w-48 sm:w-64 shrink-0" : isMasonry ? "h-auto min-h-[150px]" : "aspect-4/3"
+              )}
+              role="img"
+              aria-label={`Thumbnail for ${prompt.title}`}
+            >
               {displayImageUrl && !imageError ? (
                 <>
                   {!imageLoaded && (
@@ -400,12 +405,14 @@ export function PromptCard({
                         size="icon-sm"
                         className="hidden sm:flex bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-9 w-9 rounded-xl"
                         onClick={handleCopy}
+                        aria-label="Copy prompt to clipboard"
                       >
                         <Copy
                           className={cn(
                             "h-3.5 w-3.5 transition-transform",
                             isCopying && "scale-110"
                           )}
+                          aria-hidden="true"
                         />
                       </Button>
                     </Magnetic>
@@ -422,8 +429,9 @@ export function PromptCard({
                         variant="secondary"
                         size="icon-sm"
                         className="bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-8 w-8 sm:h-9 sm:w-9 rounded-xl"
+                        aria-label="More options"
                       >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
+                        <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-border/40 shadow-2xl">
@@ -572,13 +580,13 @@ export function PromptCard({
               <div className="mt-auto">
                 {!isCompact && (
                   <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
-                      <span className="flex items-center gap-1">
-                        <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current text-destructive")} />
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground/60" aria-label="Prompt statistics">
+                      <span className="flex items-center gap-1" aria-label={`${likeCount} likes`}>
+                        <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current text-destructive")} aria-hidden="true" />
                         {formatNumber(likeCount)}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Copy className="h-3.5 w-3.5" />
+                      <span className="flex items-center gap-1" aria-label={`${copyCount} copies`}>
+                        <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                         {formatNumber(copyCount)}
                       </span>
                     </div>
