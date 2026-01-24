@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { createHash } from "crypto";
 
 // Merge Tailwind CSS classes with clsx
 export function cn(...inputs: ClassValue[]) {
@@ -134,6 +135,13 @@ export function getInitials(name: string): string {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+}
+
+// Generate SHA-256 hash of prompt text for duplicate detection
+export function hashPromptText(promptText: string): string {
+  // Normalize: trim, lowercase, collapse whitespace
+  const normalized = promptText.trim().toLowerCase().replace(/\s+/g, " ");
+  return createHash("sha256").update(normalized).digest("hex");
 }
 
 // Prompt type configurations

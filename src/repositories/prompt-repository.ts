@@ -7,8 +7,17 @@
 
 import { prisma } from "@/lib/prisma";
 import { cache, cacheKeys, cacheTTL } from "@/lib/cache/kv-cache";
+import { hashPromptText } from "@/lib/utils";
 import type { PromptType, SortOption, Prompt, PromptCard, PaginationMeta } from "@/types";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+
+// Custom error for duplicate prompts
+export class DuplicatePromptError extends Error {
+  constructor(message = "A prompt with this text already exists") {
+    super(message);
+    this.name = "DuplicatePromptError";
+  }
+}
 
 // Input types for repository methods
 export interface ListPromptsInput {
@@ -320,31 +329,48 @@ export class PromptRepository {
 
   /**
    * Create a new prompt
+   * @throws {DuplicatePromptError} if prompt with same text already exists
    */
   async create(input: CreatePromptInput): Promise<{ id: string; slug: string }> {
-    const prompt = await prisma.prompt.create({
-      data: {
-        title: input.title,
-        slug: input.slug,
-        promptText: input.promptText,
-        type: input.type,
-        category: input.category || null,
-        style: input.style || null,
-        metadata: input.metadata || {},
-        imageUrl: input.imageUrl || null,
-        thumbnailUrl: input.thumbnailUrl || null,
-        videoUrl: input.videoUrl || null,
-        status: input.status || "published",
-        isPublic: input.isPublic ?? true,
-        publishedAt: new Date(),
-        ...(input.authorId && { authorId: input.authorId }),
-      },
-    });
+    // Compute hash for duplicate detection
+    const promptTextHash = hashPromptText(input.promptText);
 
-    // Invalidate cache
-    await cache.invalidatePattern("prompts:");
+    try {
+      const prompt = await prisma.prompt.create({
+        data: {
+          title: input.title,
+          slug: input.slug,
+          promptText: input.promptText,
+          promptTextHash,
+          type: input.type,
+          category: input.category || null,
+          style: input.style || null,
+          metadata: input.metadata || {},
+          imageUrl: input.imageUrl || null,
+          thumbnailUrl: input.thumbnailUrl || null,
+          videoUrl: input.videoUrl || null,
+          status: input.status || "published",
+          isPublic: input.isPublic ?? true,
+          publishedAt: new Date(),
+          ...(input.authorId && { authorId: input.authorId }),
+        },
+      });
 
-    return { id: prompt.id, slug: prompt.slug };
+      // Invalidate cache
+      await cache.invalidatePattern("prompts:");
+
+      return { id: prompt.id, slug: prompt.slug };
+    } catch (error) {
+      // Handle unique constraint violation (duplicate prompt)
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        (error.meta?.target as string[])?.includes("prompt_text_hash")
+      ) {
+        throw new DuplicatePromptError();
+      }
+      throw error;
+    }
   }
 
   /**

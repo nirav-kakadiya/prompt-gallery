@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateSlug } from "@/lib/utils";
+import { Prisma } from "@prisma/client";
+import { generateSlug, hashPromptText } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
 import { memoryCache, cacheKeys, cacheTTL } from "@/lib/cache/memory-cache";
 import { analyzePromptWithLLM } from "@/lib/vertex-ai";
@@ -284,24 +285,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Compute hash for duplicate detection
+    const promptTextHash = hashPromptText(promptText);
+
     // Create prompt with author if user is authenticated
-    const prompt = await prisma.prompt.create({
-      data: {
-        title,
-        slug,
-        promptText,
-        type,
-        category: finalCategory,
-        style: finalStyle,
-        metadata: finalMetadata,
-        imageUrl: imageUrl || null,
-        thumbnailUrl: thumbnailUrl || null,
-        videoUrl: videoUrl || null,
-        status: "published",
-        publishedAt: new Date(),
-        ...(user && { authorId: user.id }),
-      },
-    });
+    let prompt;
+    try {
+      prompt = await prisma.prompt.create({
+        data: {
+          title,
+          slug,
+          promptText,
+          promptTextHash,
+          type,
+          category: finalCategory,
+          style: finalStyle,
+          metadata: finalMetadata,
+          imageUrl: imageUrl || null,
+          thumbnailUrl: thumbnailUrl || null,
+          videoUrl: videoUrl || null,
+          status: "published",
+          publishedAt: new Date(),
+          ...(user && { authorId: user.id }),
+        },
+      });
+    } catch (error) {
+      // Handle duplicate prompt error
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        (error.meta?.target as string[])?.includes("prompt_text_hash")
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "DUPLICATE_PROMPT",
+              message: "This prompt already exists. Please try a different prompt text.",
+            },
+          },
+          { status: 409 }
+        );
+      }
+      throw error;
+    }
 
     // Create tags (includes user-provided + auto-extracted tags)
     if (allTags.length > 0) {

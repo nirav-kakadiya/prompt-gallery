@@ -55,6 +55,7 @@ model Prompt {
   sourceUrl       String?   @map("source_url")
   sourceType      String?   @map("source_type")
   isPublic        Boolean   @default(true) @map("is_public")
+  promptTextHash  String?   @unique @map("prompt_text_hash") @db.VarChar(64)
   authorId        String?   @map("author_id") @db.Uuid
   metadata        Json      @default("{}")
   viewCount       Int       @default(0) @map("view_count")

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
-import { generateSlug } from "@/lib/utils";
+import { generateSlug, hashPromptText } from "@/lib/utils";
 import { generateImage } from "@/lib/vertex-ai";
 import { uploadToR2 } from "@/lib/storage";
 import { convertImageToWebp, createThumbnail } from "@/lib/media-converter";
@@ -84,34 +85,60 @@ export async function POST(request: NextRequest) {
     const initialStatus = shouldGenerateImage ? "pending_image" : "published";
     const publishedAt = shouldGenerateImage ? null : new Date();
 
+    // Compute hash for duplicate detection
+    const promptTextHash = hashPromptText(promptText.trim());
+
     // Create prompt
-    const prompt = await prisma.prompt.create({
-      data: {
-        title: title.trim(),
-        slug,
-        promptText: promptText.trim(),
-        type,
-        status: initialStatus,
-        category: category || null,
-        style: style || null,
-        sourceUrl: sourceUrl || null,
-        sourceType: sourceType || null,
-        imageUrl: imageUrl || null,
-        thumbnailUrl: imageUrl || null, // Use same image for thumbnail
-        authorId: user.id,
-        metadata: {
-          ...metadata,
-          importedVia: "extension",
-          importedAt: new Date().toISOString(),
+    let prompt;
+    try {
+      prompt = await prisma.prompt.create({
+        data: {
+          title: title.trim(),
+          slug,
+          promptText: promptText.trim(),
+          promptTextHash,
+          type,
+          status: initialStatus,
+          category: category || null,
+          style: style || null,
+          sourceUrl: sourceUrl || null,
+          sourceType: sourceType || null,
+          imageUrl: imageUrl || null,
+          thumbnailUrl: imageUrl || null, // Use same image for thumbnail
+          authorId: user.id,
+          metadata: {
+            ...metadata,
+            importedVia: "extension",
+            importedAt: new Date().toISOString(),
+          },
+          publishedAt,
         },
-        publishedAt,
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-      },
-    });
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+        },
+      });
+    } catch (error) {
+      // Handle duplicate prompt error
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        (error.meta?.target as string[])?.includes("prompt_text_hash")
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "DUPLICATE_PROMPT",
+              message: "This prompt already exists in your gallery",
+            },
+          },
+          { status: 409, headers: corsHeaders }
+        );
+      }
+      throw error;
+    }
 
     // Create tags via junction table
     const tagNames = Array.isArray(tags) ? tags : [];
