@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2, Pencil, FolderPlus } from "lucide-react";
+import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2, Pencil, FolderPlus, Lock } from "lucide-react";
 import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ interface PromptCardProps {
     likeCount: number;
     viewCount?: number;
     isLiked?: boolean;
+    isPublic?: boolean;
     createdAt: string;
   };
   onCopy?: (promptId: string) => void;
@@ -320,8 +321,8 @@ export function PromptCard({
                 )}
               />
 
-              {/* Type Badge */}
-              <div className="absolute left-3 top-3">
+              {/* Type Badge & Private Badge */}
+              <div className="absolute left-3 top-3 flex items-center gap-1.5">
                 <Badge
                   variant={prompt.type as PromptType}
                   className="backdrop-blur-md bg-background/90 shadow-sm"
@@ -329,6 +330,16 @@ export function PromptCard({
                 >
                   {typeConfig?.label || "Prompt"}
                 </Badge>
+                {prompt.isPublic === false && (
+                  <Badge
+                    variant="outline"
+                    className="backdrop-blur-md bg-amber-500/90 text-white border-amber-600 shadow-sm"
+                    size={isCompact ? "sm" : "default"}
+                  >
+                    <Lock className="h-3 w-3 mr-1" />
+                    Private
+                  </Badge>
+                )}
               </div>
 
               {/* Action buttons overlay */}
@@ -580,6 +591,7 @@ export function PromptCard({
             promptText: prompt.promptText,
             type: prompt.type,
             tags,
+            isPublic: prompt.isPublic,
           }}
         />
       )}
