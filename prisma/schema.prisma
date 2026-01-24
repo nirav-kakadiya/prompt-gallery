@@ -54,6 +54,7 @@ model Prompt {
   style           String?
   sourceUrl       String?   @map("source_url")
   sourceType      String?   @map("source_type")
+  isPublic        Boolean   @default(true) @map("is_public")
   authorId        String?   @map("author_id") @db.Uuid
   metadata        Json      @default("{}")
   viewCount       Int       @default(0) @map("view_count")
@@ -80,6 +81,7 @@ model Prompt {
   @@index([copyCount(sort: Desc)])
   @@index([status, type])
   @@index([status, createdAt(sort: Desc)])
+  @@index([isPublic])
   @@map("prompts")
 
 }

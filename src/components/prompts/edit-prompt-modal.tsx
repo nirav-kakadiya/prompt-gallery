@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, X, Image, Video, RefreshCw, Play, Check } from "lucide-react";
+import { Loader2, X, Image, Video, RefreshCw, Play, Check, Globe, Lock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ interface EditPromptModalProps {
     promptText: string;
     type: PromptType;
     tags: string[];
+    isPublic?: boolean;
   };
 }
 
@@ -62,6 +63,7 @@ export function EditPromptModal({
   const [type, setType] = React.useState<PromptType>(prompt.type);
   const [tags, setTags] = React.useState<string[]>(prompt.tags);
   const [tagInput, setTagInput] = React.useState("");
+  const [isPublic, setIsPublic] = React.useState(prompt.isPublic ?? true);
 
   // Reset form when prompt changes or modal opens
   React.useEffect(() => {
@@ -71,8 +73,9 @@ export function EditPromptModal({
       setType(prompt.type);
       setTags(prompt.tags);
       setTagInput("");
+      setIsPublic(prompt.isPublic ?? true);
     }
-  }, [open, prompt.title, prompt.promptText, prompt.type, prompt.tags]);
+  }, [open, prompt.title, prompt.promptText, prompt.type, prompt.tags, prompt.isPublic]);
 
   const handleAddTag = (tag: string) => {
     const normalizedTag = tag.toLowerCase().trim();
@@ -86,7 +89,7 @@ export function EditPromptModal({
     setTags(tags.filter((t) => t !== tag));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -99,46 +102,53 @@ export function EditPromptModal({
       return;
     }
 
-    try {
-      await updatePromptMutation.mutateAsync({
+    // Close modal immediately
+    onOpenChange(false);
+
+    // Save in background
+    updatePromptMutation.mutate(
+      {
         id: prompt.id,
         data: {
           title: title.trim(),
           promptText: promptText.trim(),
           type,
           tags,
+          isPublic,
         },
-      });
+      },
+      {
+        onSuccess: () => {
+          toast.success("Prompt updated successfully", {
+            description: "Your changes have been saved",
+            duration: 3000,
+          });
+        },
+        onError: (error) => {
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to update prompt";
 
-      toast.success("Prompt updated successfully", {
-        description: "Your changes have been saved",
-        duration: 3000,
-      });
-
-      onOpenChange(false);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update prompt";
-
-      if (errorMessage.includes("UNAUTHORIZED")) {
-        toast.error("Please log in to edit prompts", {
-          duration: 4000,
-        });
-      } else if (errorMessage.includes("FORBIDDEN")) {
-        toast.error("You can only edit your own prompts", {
-          duration: 4000,
-        });
-      } else if (errorMessage.includes("NOT_FOUND")) {
-        toast.error("This prompt may have been deleted", {
-          duration: 4000,
-        });
-      } else {
-        toast.error("Failed to update prompt", {
-          description: errorMessage.replace(/^[^:]+:\s*/, ""),
-          duration: 4000,
-        });
+          if (errorMessage.includes("UNAUTHORIZED")) {
+            toast.error("Please log in to edit prompts", {
+              duration: 4000,
+            });
+          } else if (errorMessage.includes("FORBIDDEN")) {
+            toast.error("You can only edit your own prompts", {
+              duration: 4000,
+            });
+          } else if (errorMessage.includes("NOT_FOUND")) {
+            toast.error("This prompt may have been deleted", {
+              duration: 4000,
+            });
+          } else {
+            toast.error("Failed to update prompt", {
+              description: errorMessage.replace(/^[^:]+:\s*/, ""),
+              duration: 4000,
+            });
+          }
+        },
       }
-    }
+    );
   };
 
   const isLoading = updatePromptMutation.isPending;
@@ -302,6 +312,61 @@ export function EditPromptModal({
                     ))}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Visibility */}
+          <div>
+            <label className="block text-sm font-medium mb-3">
+              Visibility
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => setIsPublic(true)}
+                className={cn(
+                  "relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer",
+                  "disabled:cursor-not-allowed disabled:opacity-50",
+                  isPublic
+                    ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-offset-2 ring-offset-background ring-emerald-500/50"
+                    : "border-input hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                {isPublic && (
+                  <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center bg-emerald-500">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+                <Globe className={cn("w-5 h-5", isPublic ? "text-emerald-600" : "text-muted-foreground")} />
+                <div className="text-left">
+                  <span className={cn("text-sm font-medium block", isPublic && "text-emerald-600")}>Public</span>
+                  <span className="text-xs text-muted-foreground">Visible to everyone</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => setIsPublic(false)}
+                className={cn(
+                  "relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer",
+                  "disabled:cursor-not-allowed disabled:opacity-50",
+                  !isPublic
+                    ? "border-amber-500 bg-amber-500/10 ring-2 ring-offset-2 ring-offset-background ring-amber-500/50"
+                    : "border-input hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                {!isPublic && (
+                  <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center bg-amber-500">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+                <Lock className={cn("w-5 h-5", !isPublic ? "text-amber-600" : "text-muted-foreground")} />
+                <div className="text-left">
+                  <span className={cn("text-sm font-medium block", !isPublic && "text-amber-600")}>Private</span>
+                  <span className="text-xs text-muted-foreground">Only visible to you</span>
+                </div>
+              </button>
             </div>
           </div>
 

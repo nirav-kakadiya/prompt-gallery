@@ -21,6 +21,8 @@ export interface ListPromptsInput {
   page?: number;
   pageSize?: number;
   status?: string;
+  /** If provided, includes private prompts owned by this author */
+  currentUserId?: string;
 }
 
 export interface CreatePromptInput {
@@ -36,6 +38,7 @@ export interface CreatePromptInput {
   videoUrl?: string;
   authorId?: string;
   status?: string;
+  isPublic?: boolean;
 }
 
 export interface UpdatePromptInput {
@@ -49,6 +52,7 @@ export interface UpdatePromptInput {
   thumbnailUrl?: string;
   videoUrl?: string;
   status?: string;
+  isPublic?: boolean;
 }
 
 // Response types
@@ -87,24 +91,42 @@ export class PromptRepository {
       page = 1,
       pageSize = 20,
       status = "published",
+      currentUserId,
     } = input;
 
-    // Create cache key
-    const cacheKey = cacheKeys.prompts({ query, types, tags, category, style, sortBy, page, pageSize });
+    // Create cache key (include currentUserId for proper caching)
+    const cacheKey = cacheKeys.prompts({ query, types, tags, category, style, sortBy, page, pageSize }) +
+      (currentUserId ? `:user:${currentUserId}` : ":public");
 
     return cache.getOrFetch(
       cacheKey,
       async () => {
-        // Build where clause
-        const where: Prisma.PromptWhereInput = { status };
+        // Build where clause with AND conditions
+        const andConditions: Prisma.PromptWhereInput[] = [{ status }];
+
+        // Visibility filter: show public prompts OR private prompts owned by current user
+        if (currentUserId) {
+          andConditions.push({
+            OR: [
+              { isPublic: true },
+              { authorId: currentUserId },
+            ],
+          });
+        } else {
+          andConditions.push({ isPublic: true });
+        }
 
         // Search query
         if (query) {
-          where.OR = [
-            { title: { contains: query, mode: "insensitive" } },
-            { promptText: { contains: query, mode: "insensitive" } },
-          ];
+          andConditions.push({
+            OR: [
+              { title: { contains: query, mode: "insensitive" } },
+              { promptText: { contains: query, mode: "insensitive" } },
+            ],
+          });
         }
+
+        const where: Prisma.PromptWhereInput = { AND: andConditions };
 
         // Type filter
         if (types.length > 0) {
@@ -183,6 +205,7 @@ export class PromptRepository {
             : null,
           copyCount: p.copyCount,
           likeCount: p.likeCount,
+          isPublic: p.isPublic,
           createdAt: p.createdAt.toISOString(),
         }));
 
@@ -236,11 +259,12 @@ export class PromptRepository {
 
         if (!prompt) return null;
 
-        // Get related prompts
+        // Get related prompts (only public ones)
         const relatedPrompts = await prisma.prompt.findMany({
           where: {
             id: { not: prompt.id },
             status: "published",
+            isPublic: true,
             type: prompt.type,
           },
           take: 4,
@@ -279,6 +303,7 @@ export class PromptRepository {
               }
             : null,
           metadata: (prompt.metadata as Prompt["metadata"]) || {},
+          isPublic: prompt.isPublic,
           viewCount: prompt.viewCount,
           copyCount: prompt.copyCount,
           likeCount: prompt.likeCount,
@@ -310,6 +335,7 @@ export class PromptRepository {
         thumbnailUrl: input.thumbnailUrl || null,
         videoUrl: input.videoUrl || null,
         status: input.status || "published",
+        isPublic: input.isPublic ?? true,
         publishedAt: new Date(),
         ...(input.authorId && { authorId: input.authorId }),
       },
@@ -338,6 +364,7 @@ export class PromptRepository {
         ...(input.thumbnailUrl !== undefined && { thumbnailUrl: input.thumbnailUrl }),
         ...(input.videoUrl !== undefined && { videoUrl: input.videoUrl }),
         ...(input.status && { status: input.status }),
+        ...(input.isPublic !== undefined && { isPublic: input.isPublic }),
       },
     });
 
@@ -403,9 +430,14 @@ export class PromptRepository {
 
   /**
    * Get prompts by author
+   * @param authorId - The author's ID
+   * @param page - Page number
+   * @param pageSize - Number of prompts per page
+   * @param currentUserId - If provided and matches authorId, includes private prompts
    */
-  async findByAuthor(authorId: string, page = 1, pageSize = 20): Promise<ListPromptsResult> {
-    const cacheKey = cacheKeys.userPrompts(authorId, page);
+  async findByAuthor(authorId: string, page = 1, pageSize = 20, currentUserId?: string): Promise<ListPromptsResult> {
+    const isOwner = currentUserId === authorId;
+    const cacheKey = cacheKeys.userPrompts(authorId, page) + (isOwner ? ":owner" : ":public");
 
     return cache.getOrFetch(
       cacheKey,
@@ -413,6 +445,8 @@ export class PromptRepository {
         const where: Prisma.PromptWhereInput = {
           authorId,
           status: "published",
+          // Only show private prompts if viewing own profile
+          ...(isOwner ? {} : { isPublic: true }),
         };
 
         const [total, prompts] = await Promise.all([
@@ -461,6 +495,7 @@ export class PromptRepository {
             : null,
           copyCount: p.copyCount,
           likeCount: p.likeCount,
+          isPublic: p.isPublic,
           createdAt: p.createdAt.toISOString(),
         }));
 
@@ -503,6 +538,7 @@ export class PromptRepository {
         const prompts = await prisma.prompt.findMany({
           where: {
             status: "published",
+            isPublic: true,
             createdAt: { gte: dateThreshold },
           },
           orderBy: [{ copyCount: "desc" }, { likeCount: "desc" }, { viewCount: "desc" }],
@@ -545,6 +581,7 @@ export class PromptRepository {
             : null,
           copyCount: p.copyCount,
           likeCount: p.likeCount,
+          isPublic: p.isPublic,
           createdAt: p.createdAt.toISOString(),
         }));
       },

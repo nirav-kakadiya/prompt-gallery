@@ -51,6 +51,7 @@ export async function GET(
           where: {
             id: { not: prompt.id },
             status: "published",
+            isPublic: true,
             type: prompt.type,
           },
           take: 4,
@@ -115,6 +116,7 @@ export async function GET(
           promptCount: prompt.author.promptCount,
         } : null,
         metadata: prompt.metadata || {},
+        isPublic: prompt.isPublic,
         viewCount: prompt.viewCount + 1,
         copyCount: prompt.copyCount,
         likeCount: prompt.likeCount,
@@ -163,7 +165,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    const { title, promptText, type, tags, category, style, metadata } = body;
+    const { title, promptText, type, tags, category, style, metadata, isPublic } = body;
 
     const prompt = await prisma.prompt.findUnique({ where: { id } });
 
@@ -203,6 +205,7 @@ export async function PUT(
         ...(category !== undefined && { category }),
         ...(style !== undefined && { style }),
         ...(metadata && { metadata }),
+        ...(isPublic !== undefined && { isPublic }),
       },
     });
 

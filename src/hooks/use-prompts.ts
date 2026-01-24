@@ -245,6 +245,7 @@ interface UpdatePromptData {
   promptText: string;
   type: string;
   tags: string[];
+  isPublic?: boolean;
 }
 
 interface UpdateResponse {

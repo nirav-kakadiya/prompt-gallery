@@ -74,6 +74,9 @@ export interface Prompt {
   copyCount: number;
   likeCount: number;
 
+  // Visibility
+  isPublic: boolean;
+
   // User interaction state
   isLiked?: boolean;
 
@@ -96,6 +99,7 @@ export interface PromptCard {
   copyCount: number;
   likeCount: number;
   isLiked?: boolean;
+  isPublic?: boolean;
   createdAt: string;
 }
 

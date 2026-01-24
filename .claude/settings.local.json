@@ -29,7 +29,12 @@
       "Bash(node -e:*)",
       "Bash(powershell -Command \"Compress-Archive -Path ''dist/*'' -DestinationPath ''prompt-gallery-extension.zip'' -Force\")",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(git add:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: remove legacy migration code that references deleted schema columns\n\n- Delete admin/link-prompts API route\n- Delete admin/db-health API route  \n- Delete auth/migration.ts utility\n\nThese files referenced legacyAuthorEmail, legacyPromptId, and other\nlegacy columns that were removed from the Prisma schema.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(tasklist:*)"
     ]
   }
 }
