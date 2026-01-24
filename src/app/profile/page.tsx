@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Edit, Settings, LayoutGrid, List, Columns2, Grid3X3 } from "lucide-react";
+import { Edit, Settings, LayoutGrid, List, Columns2, Grid3X3, Globe, Lock } from "lucide-react";
 import { PageLayout, EmptyState } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/avatar";
@@ -38,6 +38,7 @@ export default function ProfilePage() {
   }, [isAuthenticated, router]);
 
   const { viewMode, setViewMode, gridColumns, setGridColumns } = usePreferencesStore();
+  const [visibilityFilter, setVisibilityFilter] = React.useState<"all" | "private">("all");
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-prompts", user?.id],
@@ -45,8 +46,20 @@ export default function ProfilePage() {
     enabled: !!user?.id,
   });
 
-  const prompts = data?.prompts || [];
+  const allPrompts = data?.prompts || [];
   const totalCount = data?.total || 0;
+
+  // Filter prompts based on visibility
+  const prompts = React.useMemo(() => {
+    if (visibilityFilter === "private") {
+      return allPrompts.filter((p: { isPublic?: boolean }) => p.isPublic === false);
+    }
+    return allPrompts;
+  }, [allPrompts, visibilityFilter]);
+
+  const privateCount = React.useMemo(() => {
+    return allPrompts.filter((p: { isPublic?: boolean }) => p.isPublic === false).length;
+  }, [allPrompts]);
 
   const getGridClasses = () => {
     if (viewMode === "list") {
@@ -117,7 +130,39 @@ export default function ProfilePage() {
         {/* User's Prompts */}
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <h2 className="text-xl font-semibold">Your Prompts</h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-xl font-semibold">Your Prompts</h2>
+
+              {/* Visibility Filter Tabs */}
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/50 border backdrop-blur-sm">
+                <button
+                  onClick={() => setVisibilityFilter("all")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    visibilityFilter === "all"
+                      ? "bg-background shadow-sm text-primary"
+                      : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                  )}
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  All
+                  <span className="text-xs opacity-60">({totalCount})</span>
+                </button>
+                <button
+                  onClick={() => setVisibilityFilter("private")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    visibilityFilter === "private"
+                      ? "bg-amber-500/20 shadow-sm text-amber-600 dark:text-amber-400"
+                      : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                  )}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  Private
+                  <span className="text-xs opacity-60">({privateCount})</span>
+                </button>
+              </div>
+            </div>
 
             {/* Layout Controls */}
             <TooltipProvider>
