@@ -686,8 +686,12 @@ export default function ProfilePage() {
                       {selectedIds.has(prompt.id) && <CheckSquare className="w-4 h-4" />}
                     </button>
                   )}
-                  <div className={cn(isSelectMode && "cursor-pointer")} onClick={() => isSelectMode && toggleSelect(prompt.id)}>
-                    <PromptCard prompt={prompt} viewMode={viewMode} />
+                  <div className={cn(isSelectMode && "cursor-pointer")}>
+                    <PromptCard
+                      prompt={prompt}
+                      viewMode={viewMode}
+                      onClick={isSelectMode ? () => toggleSelect(prompt.id) : undefined}
+                    />
                   </div>
                 </motion.div>
               ))}
@@ -723,8 +727,12 @@ export default function ProfilePage() {
                       {selectedIds.has(prompt.id) && <CheckSquare className="w-4 h-4" />}
                     </button>
                   )}
-                  <div className={cn(isSelectMode && "cursor-pointer")} onClick={() => isSelectMode && toggleSelect(prompt.id)}>
-                    <PromptCard prompt={prompt} viewMode={viewMode} />
+                  <div className={cn(isSelectMode && "cursor-pointer")}>
+                    <PromptCard
+                      prompt={prompt}
+                      viewMode={viewMode}
+                      onClick={isSelectMode ? () => toggleSelect(prompt.id) : undefined}
+                    />
                   </div>
                 </motion.div>
               ))}
