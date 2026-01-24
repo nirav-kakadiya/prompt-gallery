@@ -3,7 +3,10 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Edit, Settings, LayoutGrid, List, Columns2, Grid3X3, Globe, Lock } from "lucide-react";
+import { Edit, Settings, LayoutGrid, List, Columns2, Grid3X3, Globe, Lock, Search, X, CheckSquare, Square, Trash2, Eye, EyeOff } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useDeletePrompt, useUpdatePrompt } from "@/hooks/use-prompts";
+import { toast } from "sonner";
 import { PageLayout, EmptyState } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/avatar";
@@ -39,6 +42,77 @@ export default function ProfilePage() {
 
   const { viewMode, setViewMode, gridColumns, setGridColumns } = usePreferencesStore();
   const [visibilityFilter, setVisibilityFilter] = React.useState<"all" | "private">("all");
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  // Bulk select state
+  const [isSelectMode, setIsSelectMode] = React.useState(false);
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const deletePromptMutation = useDeletePrompt();
+  const updatePromptMutation = useUpdatePrompt();
+  const [isBulkProcessing, setIsBulkProcessing] = React.useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(prompts.map((p: { id: string }) => p.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedIds(new Set());
+  };
+
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const confirmed = window.confirm(`Delete ${selectedIds.size} prompt${selectedIds.size > 1 ? "s" : ""}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setIsBulkProcessing(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) => deletePromptMutation.mutateAsync(id))
+      );
+      toast.success(`${selectedIds.size} prompt${selectedIds.size > 1 ? "s" : ""} deleted`);
+      exitSelectMode();
+    } catch {
+      toast.error("Failed to delete some prompts");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkVisibility = async (isPublic: boolean) => {
+    if (selectedIds.size === 0) return;
+
+    setIsBulkProcessing(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          updatePromptMutation.mutateAsync({ id, data: { isPublic } as Parameters<typeof updatePromptMutation.mutateAsync>[0]["data"] })
+        )
+      );
+      toast.success(`${selectedIds.size} prompt${selectedIds.size > 1 ? "s" : ""} made ${isPublic ? "public" : "private"}`);
+      exitSelectMode();
+    } catch {
+      toast.error("Failed to update some prompts");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-prompts", user?.id],
@@ -49,13 +123,27 @@ export default function ProfilePage() {
   const allPrompts = data?.prompts || [];
   const totalCount = data?.total || 0;
 
-  // Filter prompts based on visibility
+  // Filter prompts based on visibility and search
   const prompts = React.useMemo(() => {
+    let filtered = allPrompts;
+
+    // Filter by visibility
     if (visibilityFilter === "private") {
-      return allPrompts.filter((p: { isPublic?: boolean }) => p.isPublic === false);
+      filtered = filtered.filter((p: { isPublic?: boolean }) => p.isPublic === false);
     }
-    return allPrompts;
-  }, [allPrompts, visibilityFilter]);
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((p: { title: string; promptText: string; tags?: string[] }) =>
+        p.title.toLowerCase().includes(query) ||
+        p.promptText.toLowerCase().includes(query) ||
+        (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(query)))
+      );
+    }
+
+    return filtered;
+  }, [allPrompts, visibilityFilter, searchQuery]);
 
   const privateCount = React.useMemo(() => {
     return allPrompts.filter((p: { isPublic?: boolean }) => p.isPublic === false).length;
@@ -162,6 +250,42 @@ export default function ProfilePage() {
                   <span className="text-xs opacity-60">({privateCount})</span>
                 </button>
               </div>
+
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search your prompts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-8 w-48 sm:w-64 h-9 rounded-xl bg-secondary/50 border"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Select Mode Toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isSelectMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => isSelectMode ? exitSelectMode() : setIsSelectMode(true)}
+                    className="h-9 rounded-xl"
+                  >
+                    <CheckSquare className="w-4 h-4 mr-1.5" />
+                    {isSelectMode ? "Cancel" : "Select"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Bulk select prompts</TooltipContent>
+              </Tooltip>
             </div>
 
             {/* Layout Controls */}
@@ -222,6 +346,85 @@ export default function ProfilePage() {
             </TooltipProvider>
           </div>
 
+          {/* Bulk Action Bar */}
+          <AnimatePresence>
+            {isSelectMode && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex items-center justify-between gap-4 p-3 mb-4 rounded-xl bg-primary/5 border border-primary/20"
+              >
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => selectedIds.size === prompts.length ? deselectAll() : selectAll()}
+                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
+                  >
+                    {selectedIds.size === prompts.length ? (
+                      <CheckSquare className="w-4 h-4 text-primary" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                    {selectedIds.size === prompts.length ? "Deselect All" : "Select All"}
+                  </button>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedIds.size} selected
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBulkVisibility(true)}
+                        disabled={selectedIds.size === 0 || isBulkProcessing}
+                        className="h-8"
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1.5" />
+                        Make Public
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Make selected prompts public</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBulkVisibility(false)}
+                        disabled={selectedIds.size === 0 || isBulkProcessing}
+                        className="h-8"
+                      >
+                        <EyeOff className="w-3.5 h-3.5 mr-1.5" />
+                        Make Private
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Make selected prompts private</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        disabled={selectedIds.size === 0 || isBulkProcessing}
+                        className="h-8"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                        Delete
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete selected prompts</TooltipContent>
+                  </Tooltip>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {isLoading && viewMode === "masonry" && (
             <MasonryGrid>
               {Array.from({ length: 6 }).map((_, i) => (
@@ -239,7 +442,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {!isLoading && prompts.length === 0 && (
+          {!isLoading && prompts.length === 0 && !searchQuery && allPrompts.length === 0 && (
             <EmptyState
               icon={<Edit className="w-8 h-8 text-muted-foreground" />}
               title="No prompts yet"
@@ -252,6 +455,23 @@ export default function ProfilePage() {
             />
           )}
 
+          {!isLoading && prompts.length === 0 && (searchQuery || visibilityFilter === "private") && (
+            <EmptyState
+              icon={<Search className="w-8 h-8 text-muted-foreground" />}
+              title="No prompts found"
+              description={
+                searchQuery
+                  ? `No prompts match "${searchQuery}"`
+                  : "You don't have any private prompts"
+              }
+              action={
+                <Button variant="outline" onClick={() => { setSearchQuery(""); setVisibilityFilter("all"); }}>
+                  Clear Filters
+                </Button>
+              }
+            />
+          )}
+
           {!isLoading && prompts.length > 0 && viewMode === "masonry" && (
             <MasonryGrid>
               {(prompts as Array<Parameters<typeof PromptCard>[0]["prompt"]>).map((prompt, index) => (
@@ -260,9 +480,24 @@ export default function ProfilePage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(index * 0.02, 0.5) }}
-                  className="mb-6"
+                  className="mb-6 relative"
                 >
-                  <PromptCard prompt={prompt} viewMode={viewMode} />
+                  {isSelectMode && (
+                    <button
+                      onClick={() => toggleSelect(prompt.id)}
+                      className={cn(
+                        "absolute -top-2 -left-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all",
+                        selectedIds.has(prompt.id)
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "bg-background border-muted-foreground/30 hover:border-primary"
+                      )}
+                    >
+                      {selectedIds.has(prompt.id) && <CheckSquare className="w-4 h-4" />}
+                    </button>
+                  )}
+                  <div className={cn(isSelectMode && "cursor-pointer")} onClick={() => isSelectMode && toggleSelect(prompt.id)}>
+                    <PromptCard prompt={prompt} viewMode={viewMode} />
+                  </div>
                 </motion.div>
               ))}
             </MasonryGrid>
@@ -275,8 +510,24 @@ export default function ProfilePage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(index * 0.02, 0.5) }}
+                  className="relative"
                 >
-                  <PromptCard prompt={prompt} viewMode={viewMode} />
+                  {isSelectMode && (
+                    <button
+                      onClick={() => toggleSelect(prompt.id)}
+                      className={cn(
+                        "absolute -top-2 -left-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all",
+                        selectedIds.has(prompt.id)
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "bg-background border-muted-foreground/30 hover:border-primary"
+                      )}
+                    >
+                      {selectedIds.has(prompt.id) && <CheckSquare className="w-4 h-4" />}
+                    </button>
+                  )}
+                  <div className={cn(isSelectMode && "cursor-pointer")} onClick={() => isSelectMode && toggleSelect(prompt.id)}>
+                    <PromptCard prompt={prompt} viewMode={viewMode} />
+                  </div>
                 </motion.div>
               ))}
             </div>

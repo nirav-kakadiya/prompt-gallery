@@ -27,6 +27,8 @@ import {
 import { toast } from "sonner";
 import { useAuthStore } from "@/hooks/use-auth";
 import { useDeletePrompt } from "@/hooks/use-prompts";
+import { useKeyboardShortcut, getShortcutDisplay } from "@/hooks/use-keyboard-shortcuts";
+import { useUndoAction } from "@/hooks/use-undo";
 import { EditPromptModal } from "@/components/prompts/edit-prompt-modal";
 import { AddToCollectionModal } from "@/components/collections/add-to-collection-modal";
 
@@ -72,12 +74,14 @@ export function PromptCard({
   const { user } = useAuthStore();
   const router = useRouter();
   const deletePromptMutation = useDeletePrompt();
+  const { execute: executeUndo } = useUndoAction();
   const [isLiked, setIsLiked] = React.useState(prompt.isLiked || false);
   const [likeCount, setLikeCount] = React.useState(prompt.likeCount);
   const [copyCount, setCopyCount] = React.useState(prompt.copyCount);
   const [isHovered, setIsHovered] = React.useState(false);
   const [isCopying, setIsCopying] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isPendingDelete, setIsPendingDelete] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
   const [showAddToCollectionModal, setShowAddToCollectionModal] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
@@ -86,6 +90,23 @@ export function PromptCard({
 
   const isOwner = user?.id === prompt.author?.id;
   const promptUrl = `/prompts/${prompt.slug}`;
+
+  // Keyboard shortcut: Cmd/Ctrl+C to copy when hovered
+  const handleCopyShortcut = React.useCallback(() => {
+    if (!isHovered) return;
+    copyToClipboard(prompt.promptText).then((success) => {
+      if (success) {
+        setCopyCount((prev) => prev + 1);
+        toast.success("Prompt copied!", {
+          description: `${getShortcutDisplay({ meta: true, key: "C" })} pressed`,
+          duration: 2000,
+        });
+        onCopy?.(prompt.id);
+      }
+    });
+  }, [isHovered, prompt.promptText, prompt.id, onCopy]);
+
+  useKeyboardShortcut("c", handleCopyShortcut, { meta: true, enabled: isHovered });
 
   // Prefetch on hover for faster navigation
   const handleMouseEnter = React.useCallback(() => {
@@ -186,36 +207,54 @@ export function PromptCard({
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${prompt.title}"? This action cannot be undone.`
-    );
-    if (!confirmed) return;
-    setIsDeleting(true);
-    try {
-      await deletePromptMutation.mutateAsync(prompt.id);
-      toast.success("Prompt deleted successfully", {
-        description: `"${prompt.title}" has been removed`,
-        duration: 3000,
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete prompt";
-      if (errorMessage.includes("UNAUTHORIZED")) {
-        toast.error("Authentication required", { description: "Please log in to delete prompts" });
-      } else if (errorMessage.includes("FORBIDDEN")) {
-        toast.error("Permission denied", { description: "You can only delete your own prompts" });
-      } else if (errorMessage.includes("NOT_FOUND")) {
-        toast.error("Prompt not found", { description: "This prompt may have already been deleted" });
-      } else {
-        toast.error("Failed to delete prompt", { description: errorMessage.replace(/^[^:]+:\s*/, "") });
-      }
-    } finally {
-      setIsDeleting(false);
-    }
+
+    // Optimistically hide the card
+    setIsPendingDelete(true);
+
+    // Use undo pattern - delete happens after 5 seconds unless undone
+    executeUndo({
+      message: `"${prompt.title}" deleted`,
+      description: "Click undo to restore",
+      timeout: 5000,
+      action: async () => {
+        try {
+          await deletePromptMutation.mutateAsync(prompt.id);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Failed to delete prompt";
+          if (errorMessage.includes("UNAUTHORIZED")) {
+            toast.error("Authentication required", { description: "Please log in to delete prompts" });
+          } else if (errorMessage.includes("FORBIDDEN")) {
+            toast.error("Permission denied", { description: "You can only delete your own prompts" });
+          } else if (errorMessage.includes("NOT_FOUND")) {
+            // Already deleted, no need to show error
+          } else {
+            toast.error("Failed to delete prompt", { description: errorMessage.replace(/^[^:]+:\s*/, "") });
+          }
+          throw error; // Re-throw to trigger undo restoration
+        }
+      },
+      undo: () => {
+        // Restore the card visibility
+        setIsPendingDelete(false);
+      },
+    });
   };
 
   const isList = viewMode === "list";
   const isCompact = viewMode === "compact";
   const isMasonry = viewMode === "masonry";
+
+  // Don't render if pending delete
+  if (isPendingDelete) {
+    return (
+      <motion.div
+        initial={{ opacity: 1, scale: 1 }}
+        animate={{ opacity: 0, scale: 0.8, height: 0 }}
+        transition={{ duration: 0.3 }}
+        className="overflow-hidden"
+      />
+    );
+  }
 
   return (
     <TooltipProvider>
@@ -371,7 +410,9 @@ export function PromptCard({
                       </Button>
                     </Magnetic>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="text-[10px] font-black uppercase tracking-widest">Copy</TooltipContent>
+                  <TooltipContent side="top" className="text-[10px] font-black uppercase tracking-widest">
+                    Copy <span className="opacity-60 ml-1">{getShortcutDisplay({ meta: true, key: "C" })}</span>
+                  </TooltipContent>
                 </Tooltip>
 
                 <div onClick={(e) => e.stopPropagation()}>
