@@ -30,9 +30,20 @@ export default function ExtensionPage() {
             from any website directly to your Prompt Gallery account.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" disabled>
-              <Chrome className="w-5 h-5 mr-2" />
-              Chrome (Coming Soon)
+            <Button size="lg" variant="gradient" className="relative group overflow-visible" asChild>
+              <a
+                href="https://chromewebstore.google.com/detail/prompt-gallery-saver/ehlbdcnncgamggpkmoaacclcfnmapbdp?authuser=0&hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Chrome className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" />
+                Add to Chrome
+                {/* Premium Live Dot - Google Labs / Apple Vibe */}
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 border border-white dark:border-slate-900 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
+                </span>
+              </a>
             </Button>
             <Button size="lg" variant="outline" disabled>
               <Download className="w-5 h-5 mr-2" />
