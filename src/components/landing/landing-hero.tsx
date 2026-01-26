@@ -136,32 +136,42 @@ export function LandingHero() {
                    <div className="w-10" />
                 </div>
                 
-                {/* The Visual Content - Abstract or Clean App UI */}
+                {/* The Visual Content - Gallery Preview */}
                 <div className="aspect-[16/9] bg-background/20 relative">
                    <div className="absolute inset-0 grid grid-cols-12 gap-1 p-1">
                       {/* Left Sidebar Mock */}
-                      <div className="col-span-2 bg-muted/30 rounded-xl m-4" />
-                      
-                      {/* Main Content Mock - High Density Grid */}
-                      <div className="col-span-10 p-8">
-                         <div className="grid grid-cols-4 gap-6">
-                            {Array.from({ length: 8 }).map((_, i) => (
-                              <div 
-                                key={i} 
-                                className="aspect-[4/5] rounded-2xl bg-muted/40 animate-pulse border border-border/10"
-                                style={{ animationDelay: `${i * 150}ms` }}
-                              />
-                            ))}
-                         </div>
+                      <div className="col-span-2 bg-muted/30 rounded-xl m-4 p-4 flex flex-col gap-3">
+                         <div className="h-8 bg-muted/50 rounded-lg" />
+                         <div className="h-6 bg-muted/30 rounded-lg w-3/4" />
+                         <div className="h-6 bg-muted/30 rounded-lg w-1/2" />
+                         <div className="h-6 bg-primary/20 rounded-lg" />
+                         <div className="h-6 bg-muted/30 rounded-lg w-2/3" />
                       </div>
-                   </div>
-                   
-                   {/* Centered Focus Element */}
-                   <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="relative">
-                         <div className="absolute inset-0 bg-primary blur-[80px] opacity-20" />
-                         <div className="relative w-32 h-32 rounded-3xl bg-primary flex items-center justify-center shadow-2xl">
-                            <Sparkles className="w-16 h-16 text-white" />
+
+                      {/* Main Content - Sample Images Grid */}
+                      <div className="col-span-10 p-6">
+                         <div className="grid grid-cols-4 gap-4">
+                            {[
+                              "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&h=500&fit=crop",
+                              "https://images.unsplash.com/photo-1617791160505-6f00504e3519?w=400&h=500&fit=crop",
+                              "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=500&fit=crop",
+                              "https://images.unsplash.com/photo-1633177317976-3f9bc45e1d1d?w=400&h=500&fit=crop",
+                              "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?w=400&h=500&fit=crop",
+                              "https://images.unsplash.com/photo-1614851099511-773084f6911d?w=400&h=500&fit=crop",
+                              "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=400&h=500&fit=crop",
+                              "https://images.unsplash.com/photo-1614850523011-8f49ffc73908?w=400&h=500&fit=crop",
+                            ].map((src, i) => (
+                              <div
+                                key={i}
+                                className="aspect-[4/5] rounded-2xl overflow-hidden border border-border/20 shadow-lg"
+                              >
+                                <img
+                                  src={src}
+                                  alt={`Sample ${i + 1}`}
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                                />
+                              </div>
+                            ))}
                          </div>
                       </div>
                    </div>
