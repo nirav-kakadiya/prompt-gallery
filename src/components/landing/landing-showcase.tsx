@@ -7,39 +7,39 @@ import { motion } from "framer-motion";
 
 const prompts = [
   {
-    title: "Vaporwave Architecture",
+    title: "Cyberpunk Portrait",
     category: "Midjourney v6",
-    img: "https://images.unsplash.com/photo-1675557009875-436f595b18df?q=80&w=800&auto=format&fit=crop",
+    img: "https://picsum.photos/seed/cyber/800/1000",
     size: "large"
   },
   {
-    title: "Neural Network Flow",
+    title: "Neon Dreams",
     category: "Stable Diffusion",
-    img: "https://images.unsplash.com/photo-1673187115862-dba74433d942?q=80&w=800&auto=format&fit=crop",
+    img: "https://picsum.photos/seed/neon/800/1000",
     size: "small"
   },
   {
-    title: "Biomechanical Study",
+    title: "Fantasy Realm",
     category: "DALL-E 3",
-    img: "https://images.unsplash.com/photo-1670272505284-8faba1c31f7d?q=80&w=800&auto=format&fit=crop",
+    img: "https://picsum.photos/seed/fantasy/800/1000",
     size: "medium"
   },
   {
-    title: "Abstract Geometric",
+    title: "Digital Muse",
     category: "Flux.1",
-    img: "https://images.unsplash.com/photo-1679083216051-aa510a1a2c0e?q=80&w=800&auto=format&fit=crop",
+    img: "https://picsum.photos/seed/muse/800/1000",
     size: "small"
   },
   {
-    title: "Organic Patterns",
+    title: "Ethereal Beauty",
     category: "Midjourney",
-    img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop",
+    img: "https://picsum.photos/seed/ethereal/800/1000",
     size: "large"
   },
   {
-    title: "Cybernetic Portrait",
+    title: "Sci-Fi World",
     category: "Stable Diffusion XL",
-    img: "https://images.unsplash.com/photo-1684163761883-9a606960efdf?q=80&w=800&auto=format&fit=crop",
+    img: "https://picsum.photos/seed/scifi/800/1000",
     size: "medium"
   }
 ];
