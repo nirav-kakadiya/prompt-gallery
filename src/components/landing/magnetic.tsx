@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { motion } from "framer-motion";
 
 export function Magnetic({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -19,18 +18,18 @@ export function Magnetic({ children }: { children: React.ReactNode }) {
     setPosition({ x: 0, y: 0 });
   };
 
-  const { x, y } = position;
-
   return (
-    <motion.div
-      style={{ position: "relative" }}
+    <div
       ref={ref}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      animate={{ x, y }}
-      transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+      style={{
+        position: "relative",
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        transition: "transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+      }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

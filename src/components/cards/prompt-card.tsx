@@ -4,7 +4,6 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { Copy, Heart, Eye, MoreHorizontal, ExternalLink, Share2, Trash2, Pencil, FolderPlus, Lock } from "lucide-react";
 import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -247,23 +246,17 @@ export function PromptCard({
   // Don't render if pending delete
   if (isPendingDelete) {
     return (
-      <motion.div
-        initial={{ opacity: 1, scale: 1 }}
-        animate={{ opacity: 0, scale: 0.8, height: 0 }}
-        transition={{ duration: 0.3 }}
-        className="overflow-hidden"
-      />
+      <div className="overflow-hidden opacity-0 scale-90 h-0 transition-all duration-300" />
     );
   }
 
   return (
-    <TooltipProvider>
-      <motion.article
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        whileHover={{ y: -4 }}
-        className={cn("group relative", isList && "w-full")}
+    <>
+      <article
+        className={cn(
+          "group relative transition-transform duration-200 hover:-translate-y-1",
+          isList && "w-full"
+        )}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setIsHovered(false)}
         aria-label={`${prompt.title} by ${prompt.author?.name || "Anonymous"}`}
@@ -397,30 +390,32 @@ export function PromptCard({
                 )}
               >
                 {/* Copy button - hidden on mobile, shown on desktop hover */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Magnetic>
-                      <Button
-                        variant="secondary"
-                        size="icon-sm"
-                        className="hidden sm:flex bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-9 w-9 rounded-xl"
-                        onClick={handleCopy}
-                        aria-label="Copy prompt to clipboard"
-                      >
-                        <Copy
-                          className={cn(
-                            "h-3.5 w-3.5 transition-transform",
-                            isCopying && "scale-110"
-                          )}
-                          aria-hidden="true"
-                        />
-                      </Button>
-                    </Magnetic>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-[10px] font-black uppercase tracking-widest">
-                    Copy <span className="opacity-60 ml-1">{getShortcutDisplay({ meta: true, key: "C" })}</span>
-                  </TooltipContent>
-                </Tooltip>
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Magnetic>
+                        <Button
+                          variant="secondary"
+                          size="icon-sm"
+                          className="hidden sm:flex bg-background/80 backdrop-blur-xl hover:bg-background shadow-2xl border-none h-9 w-9 rounded-xl"
+                          onClick={handleCopy}
+                          aria-label="Copy prompt to clipboard"
+                        >
+                          <Copy
+                            className={cn(
+                              "h-3.5 w-3.5 transition-transform",
+                              isCopying && "scale-110"
+                            )}
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      </Magnetic>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-[10px] font-black uppercase tracking-widest">
+                      Copy <span className="opacity-60 ml-1">{getShortcutDisplay({ meta: true, key: "C" })}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
                 <div onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
@@ -627,7 +622,7 @@ export function PromptCard({
             </div>
           </div>
         </Link>
-      </motion.article>
+      </article>
 
       {/* Edit Modal */}
       {isOwner && (
@@ -654,7 +649,7 @@ export function PromptCard({
           promptTitle={prompt.title}
         />
       )}
-    </TooltipProvider>
+    </>
   );
 }
 

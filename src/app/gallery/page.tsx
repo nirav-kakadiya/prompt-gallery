@@ -207,32 +207,25 @@ function GalleryContent() {
                     ))}
                   </div>
 
-                  <AnimatePresence>
-                    {viewMode === "grid" && (
-                      <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 border-l ml-1 h-6 overflow-hidden"
-                      >
-                        <span className="hidden min-[450px]:inline text-[10px] font-black uppercase tracking-tighter text-muted-foreground/60 whitespace-nowrap">
-                          Size
-                        </span>
-                        <input
-                          type="range"
-                          min="2"
-                          max="6"
-                          step="1"
-                          value={gridColumns}
-                          onChange={(e) => setGridColumns(parseInt(e.target.value))}
-                          className="w-12 min-[400px]:w-16 sm:w-20 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary hover:accent-primary/80 transition-all"
-                        />
-                        <div className="flex items-center justify-center w-5 h-5 rounded bg-primary/10 text-[11px] font-bold text-primary shrink-0">
-                          {gridColumns}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {viewMode === "grid" && (
+                    <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 border-l ml-1 h-6 overflow-hidden">
+                      <span className="hidden min-[450px]:inline text-[10px] font-black uppercase tracking-tighter text-muted-foreground/60 whitespace-nowrap">
+                        Size
+                      </span>
+                      <input
+                        type="range"
+                        min="2"
+                        max="6"
+                        step="1"
+                        value={gridColumns}
+                        onChange={(e) => setGridColumns(parseInt(e.target.value))}
+                        className="w-12 min-[400px]:w-16 sm:w-20 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary hover:accent-primary/80 transition-all"
+                      />
+                      <div className="flex items-center justify-center w-5 h-5 rounded bg-primary/10 text-[11px] font-bold text-primary shrink-0">
+                        {gridColumns}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -325,23 +318,16 @@ function GalleryContent() {
               <TooltipProvider>
                 <MasonryGrid>
                   {prompts.map((prompt, index) => (
-                    <motion.div
-                      key={prompt.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.5) }}
-                      className="mb-6"
-                    >
-                      <PromptCard prompt={prompt} viewMode={viewMode} />
-                    </motion.div>
+                    <div key={prompt.id} className="mb-6">
+                      <PromptCard prompt={prompt} viewMode={viewMode} priority={index < 4} />
+                    </div>
                   ))}
                 </MasonryGrid>
               </TooltipProvider>
             )}
             {!isLoading && !error && prompts.length > 0 && viewMode !== "masonry" && (
               <TooltipProvider>
-                <motion.div
-                  layout
+                <div
                   className={cn(
                     "grid gap-4 sm:gap-6",
                     viewMode === "grid" && (
@@ -355,21 +341,10 @@ function GalleryContent() {
                     viewMode === "list" && "grid-cols-1"
                   )}
                 >
-                  <AnimatePresence mode="popLayout">
-                    {prompts.map((prompt, index) => (
-                      <motion.div
-                        key={prompt.id}
-                        layout
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.5) }}
-                      >
-                        <PromptCard prompt={prompt} viewMode={viewMode} />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
+                  {prompts.map((prompt, index) => (
+                    <PromptCard key={prompt.id} prompt={prompt} viewMode={viewMode} priority={index < gridColumns * 2} />
+                  ))}
+                </div>
               </TooltipProvider>
             )}
 
