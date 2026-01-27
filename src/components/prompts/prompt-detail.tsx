@@ -3,7 +3,6 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy,
   Heart,
@@ -218,11 +217,7 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
       {/* Image Section - The Height Master */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="space-y-4"
-      >
+      <div className="space-y-4">
         <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted">
           {imageUrl && !imageError ? (
             <>
@@ -358,15 +353,11 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
             {formattedDate}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Content Section - Matches height of image section on desktop */}
       <div className="relative min-h-[500px]">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-4 lg:overflow-y-auto lg:max-h-full custom-scrollbar"
-        >
+        <div className="space-y-4 lg:overflow-y-auto lg:max-h-full custom-scrollbar">
           {/* Header Area (Optimized for Mobile/Desktop) */}
           <div className="space-y-4 shrink-0">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -582,26 +573,17 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
               Report this prompt
             </Button>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Report Modal */}
-      <AnimatePresence>
-        {showReportModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
-              onClick={() => setShowReportModal(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-background rounded-2xl p-6 z-50 shadow-xl"
-            >
+      {showReportModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 animate-in fade-in duration-200"
+            onClick={() => setShowReportModal(false)}
+          />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-background rounded-2xl p-6 z-50 shadow-xl animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-destructive/10">
@@ -695,10 +677,9 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
                   </Button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </>
         )}
-      </AnimatePresence>
     </div>
   );
 }

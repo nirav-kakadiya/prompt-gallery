@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { PromptCard } from "@/components/cards/prompt-card";
 import { Button } from "@/components/ui/button";
@@ -59,14 +58,7 @@ export function RelatedPrompts({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {prompts.slice(0, 4).map((prompt, index) => (
-          <motion.div
-            key={prompt.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <PromptCard prompt={prompt} />
-          </motion.div>
+          <PromptCard key={prompt.id} prompt={prompt} priority={index < 2} />
         ))}
       </div>
     </section>
