@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Prompt Gallery Saver",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Save AI prompts from Reddit, X/Twitter, or any webpage to your Prompt Gallery",
   "icons": {
     "16": "icons/icon16.png",

@@ -1,6 +1,6 @@
 {
   "name": "prompt-gallery-extension",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Save AI prompts from anywhere to your Prompt Gallery",
   "type": "module",
   "scripts": {
