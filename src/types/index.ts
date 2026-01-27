@@ -25,6 +25,18 @@ export type SortOption =
   | "most_liked"
   | "alphabetical";
 
+// PromptImage interface for multiple images per prompt
+export interface PromptImage {
+  id: string;
+  promptId: string;
+  imageUrl: string;
+  thumbnailUrl: string | null;
+  blurhash: string | null;
+  displayOrder: number;
+  caption: string | null;
+  createdAt: string;
+}
+
 // Prompt interfaces
 export interface PromptMetadata {
   model?: string;
@@ -57,6 +69,7 @@ export interface Prompt {
   thumbnailUrl: string | null;
   videoUrl: string | null;
   blurhash: string | null;
+  images?: PromptImage[];
 
   // Categorization
   tags: string[];

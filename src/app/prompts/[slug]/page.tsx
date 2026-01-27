@@ -52,6 +52,16 @@ const getPromptData = cache(async (slug: string) => {
                 select: { name: true }
               }
             }
+          },
+          images: {
+            orderBy: { displayOrder: "asc" },
+            select: {
+              id: true,
+              imageUrl: true,
+              thumbnailUrl: true,
+              displayOrder: true,
+              caption: true,
+            }
           }
         },
       });
@@ -77,6 +87,7 @@ const getPromptData = cache(async (slug: string) => {
           image: prompt.author.avatarUrl,
         } : null,
         metadata: prompt.metadata ? JSON.stringify(prompt.metadata) : null,
+        images: prompt.images || [],
       };
     },
     cacheTTL.prompts

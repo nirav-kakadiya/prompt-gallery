@@ -207,6 +207,7 @@ export async function POST(request: NextRequest) {
       category,
       style,
       metadata = {},
+      images = [],
       imageUrl,
       thumbnailUrl,
       videoUrl,
@@ -363,6 +364,18 @@ export async function POST(request: NextRequest) {
         );
       }
       throw error;
+    }
+
+    // Create PromptImage records if multiple images provided
+    if (images && images.length > 0) {
+      await prisma.promptImage.createMany({
+        data: images.map((img: { url: string; thumbnailUrl?: string }, index: number) => ({
+          promptId: prompt.id,
+          imageUrl: img.url,
+          thumbnailUrl: img.thumbnailUrl || img.url,
+          displayOrder: index,
+        })),
+      });
     }
 
     // Create tags (includes user-provided + auto-extracted tags)

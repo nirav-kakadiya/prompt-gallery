@@ -2,13 +2,15 @@
 // Connected to Supabase PostgreSQL
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["public"]
 }
 
 // Profile model (extends Supabase auth.users)
@@ -35,6 +37,7 @@ model Profile {
   reports             Report[]
 
   @@map("profiles")
+  @@schema("public")
 }
 
 // Main Prompt model
@@ -71,6 +74,7 @@ model Prompt {
   collectionPrompts CollectionPrompt[]
   promptTags        PromptTag[]
   reports           Report[]
+  images            PromptImage[]
 
   @@index([type])
   @@index([status])
@@ -84,6 +88,25 @@ model Prompt {
   @@index([status, createdAt(sort: Desc)])
   @@index([isPublic])
   @@map("prompts")
+  @@schema("public")
+}
+
+// PromptImage model for multiple images per prompt
+model PromptImage {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId      String   @map("prompt_id") @db.Uuid
+  imageUrl      String   @map("image_url")
+  thumbnailUrl  String?  @map("thumbnail_url")
+  blurhash      String?
+  displayOrder  Int      @default(0) @map("display_order")
+  caption       String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  prompt        Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@index([promptId, displayOrder])
+  @@map("prompt_images")
+  @@schema("public")
 }
 
 // Tag model
@@ -99,6 +122,7 @@ model Tag {
   promptTags  PromptTag[]
 
   @@map("tags")
+  @@schema("public")
 }
 
 // Junction table for Prompt <-> Tag
@@ -112,6 +136,7 @@ model PromptTag {
 
   @@id([promptId, tagId])
   @@map("prompt_tags")
+  @@schema("public")
 }
 
 // Category model
@@ -127,6 +152,7 @@ model Category {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("categories")
+  @@schema("public")
 }
 
 // Like model for user interactions
@@ -141,6 +167,7 @@ model Like {
 
   @@unique([userId, promptId])
   @@map("likes")
+  @@schema("public")
 }
 
 // Collection model for organizing prompts
@@ -163,6 +190,7 @@ model Collection {
   @@index([isPublic])
   @@index([ownerId])
   @@map("collections")
+  @@schema("public")
 }
 
 // Junction table for Collection <-> Prompt
@@ -177,6 +205,7 @@ model CollectionPrompt {
 
   @@id([collectionId, promptId])
   @@map("collection_prompts")
+  @@schema("public")
 }
 
 // Saved Collections - tracks which users have saved which public collections
@@ -190,6 +219,7 @@ model SavedCollection {
 
   @@id([userId, collectionId])
   @@map("saved_collections")
+  @@schema("public")
 }
 
 // View buffer for batched updates
@@ -202,6 +232,7 @@ model ViewBuffer {
   @@index([createdAt])
   @@index([promptId])
   @@map("view_buffer")
+  @@schema("public")
 }
 
 // Copy buffer for batched updates
@@ -214,6 +245,7 @@ model CopyBuffer {
   @@index([createdAt])
   @@index([promptId])
   @@map("copy_buffer")
+  @@schema("public")
 }
 
 // API Key for extension authentication
@@ -233,6 +265,7 @@ model ApiKey {
   @@index([userId])
   @@index([keyPrefix])
   @@map("api_keys")
+  @@schema("public")
 }
 
 // Contact message model
@@ -249,6 +282,7 @@ model ContactMessage {
   @@index([status])
   @@index([createdAt])
   @@map("contact_messages")
+  @@schema("public")
 }
 
 // Report model for reporting prompts
@@ -268,4 +302,5 @@ model Report {
   @@index([promptId])
   @@index([status])
   @@map("reports")
+  @@schema("public")
 }

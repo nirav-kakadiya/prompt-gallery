@@ -302,6 +302,8 @@ export class PromptRepository {
           tags: prompt.promptTags.map((pt) => pt.tag.name),
           category: prompt.category,
           style: prompt.style,
+          sourceUrl: prompt.sourceUrl,
+          authorProfileLink: prompt.authorProfileLink,
           authorId: prompt.authorId,
           author: prompt.author
             ? {

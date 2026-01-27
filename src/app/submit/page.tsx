@@ -78,8 +78,7 @@ export default function SubmitPage() {
     type: "text-to-image" as PromptType,
     tags: [] as string[],
     category: "",
-    imageUrl: "",
-    thumbnailUrl: "",
+    images: [] as Array<{ url: string; thumbnailUrl: string }>,
     videoUrl: "",
     sourceUrl: "",
     authorProfileLink: "",
@@ -109,8 +108,7 @@ export default function SubmitPage() {
   React.useEffect(() => {
     setFormData((prev) => ({
       ...prev,
-      imageUrl: "",
-      thumbnailUrl: "",
+      images: [],
       videoUrl: "",
     }));
     setUrlInput("");
@@ -153,14 +151,70 @@ export default function SubmitPage() {
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      await handleFileUpload(files[0]);
+      if (mediaType === "image") {
+        const filesToUpload = Array.from(files).slice(0, 4 - formData.images.length);
+        await handleMultipleFileUpload(filesToUpload);
+      } else {
+        await handleFileUpload(files[0]);
+      }
     }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      await handleFileUpload(files[0]);
+      if (mediaType === "image") {
+        // Handle multiple images (up to 4)
+        const filesToUpload = Array.from(files).slice(0, 4 - formData.images.length);
+        await handleMultipleFileUpload(filesToUpload);
+      } else {
+        await handleFileUpload(files[0]);
+      }
+    }
+  };
+
+  const handleMultipleFileUpload = async (files: File[]) => {
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", file);
+        formDataUpload.append("mediaType", "image");
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataUpload,
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error?.message || "Upload failed");
+        }
+
+        return {
+          url: data.data.imageUrl,
+          thumbnailUrl: data.data.thumbnailUrl,
+        };
+      });
+
+      const uploadedImages = await Promise.all(uploadPromises);
+
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...uploadedImages].slice(0, 4),
+      }));
+
+      toast.success(`${uploadedImages.length} image${uploadedImages.length > 1 ? "s" : ""} uploaded!`);
+    } catch (error) {
+      toast.error("Upload failed", {
+        description: error instanceof Error ? error.message : "Please try again",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -186,8 +240,7 @@ export default function SubmitPage() {
       if (mediaType === "image") {
         setFormData((prev) => ({
           ...prev,
-          imageUrl: data.data.imageUrl,
-          thumbnailUrl: data.data.thumbnailUrl,
+          images: [...prev.images, { url: data.data.imageUrl, thumbnailUrl: data.data.thumbnailUrl }].slice(0, 4),
         }));
       } else {
         setFormData((prev) => ({
@@ -229,8 +282,7 @@ export default function SubmitPage() {
 
       setFormData((prev) => ({
         ...prev,
-        imageUrl: data.data.imageUrl,
-        thumbnailUrl: data.data.thumbnailUrl,
+        images: [...prev.images, { url: data.data.imageUrl, thumbnailUrl: data.data.thumbnailUrl }].slice(0, 4),
       }));
 
       toast.success("Image generated successfully!");
@@ -260,8 +312,7 @@ export default function SubmitPage() {
     if (mediaType === "image") {
       setFormData((prev) => ({
         ...prev,
-        imageUrl: urlInput.trim(),
-        thumbnailUrl: urlInput.trim(),
+        images: [...prev.images, { url: urlInput.trim(), thumbnailUrl: urlInput.trim() }].slice(0, 4),
       }));
     } else {
       setFormData((prev) => ({
@@ -270,14 +321,21 @@ export default function SubmitPage() {
       }));
     }
 
+    setUrlInput("");
     toast.success("URL added successfully!");
+  };
+
+  const removeImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
   };
 
   const clearMedia = () => {
     setFormData((prev) => ({
       ...prev,
-      imageUrl: "",
-      thumbnailUrl: "",
+      images: [],
       videoUrl: "",
     }));
     setUrlInput("");
@@ -285,7 +343,7 @@ export default function SubmitPage() {
 
   const hasMedia =
     mediaType === "image"
-      ? !!formData.imageUrl
+      ? formData.images.length > 0
       : !!formData.videoUrl;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -337,8 +395,9 @@ export default function SubmitPage() {
           type: formData.type,
           tags: formData.tags,
           category: formData.category || null,
-          imageUrl: formData.imageUrl || null,
-          thumbnailUrl: formData.thumbnailUrl || null,
+          images: formData.images.length > 0 ? formData.images : undefined,
+          imageUrl: formData.images[0]?.url || null,
+          thumbnailUrl: formData.images[0]?.thumbnailUrl || null,
           videoUrl: formData.videoUrl || null,
           sourceUrl: formData.sourceUrl.trim() || undefined,
           authorProfileLink: formData.authorProfileLink.trim() || undefined,
@@ -489,6 +548,16 @@ export default function SubmitPage() {
               {mediaType === "image" ? "Image" : "Video"} *
             </label>
 
+            {/* Hidden file input - always rendered */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={mediaType === "image" ? "image/*" : "video/*"}
+              multiple={mediaType === "image"}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
             {/* Media Source Tabs */}
             <div className="flex gap-2 mb-4">
               <button
@@ -538,27 +607,73 @@ export default function SubmitPage() {
 
             {/* Media Preview or Upload Area */}
             {hasMedia ? (
-              <div className="relative rounded-xl overflow-hidden border bg-muted">
+              <div className="space-y-4">
                 {mediaType === "image" ? (
-                  <img
-                    src={formData.imageUrl}
-                    alt="Preview"
-                    className="w-full h-64 object-contain"
-                  />
+                  <>
+                    {/* Image Grid Preview */}
+                    <div className={cn(
+                      "grid gap-3",
+                      formData.images.length === 1 && "grid-cols-1",
+                      formData.images.length === 2 && "grid-cols-2",
+                      formData.images.length >= 3 && "grid-cols-2"
+                    )}>
+                      {formData.images.map((img, index) => (
+                        <div
+                          key={index}
+                          className={cn(
+                            "relative rounded-xl overflow-hidden border bg-muted",
+                            formData.images.length === 1 && "h-64",
+                            formData.images.length >= 2 && "h-40"
+                          )}
+                        >
+                          <img
+                            src={img.url}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-full object-contain"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          {index === 0 && formData.images.length > 1 && (
+                            <span className="absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded bg-black/50 text-white backdrop-blur-sm">
+                              Primary
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Add More Images Button */}
+                    {formData.images.length < 4 && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full p-3 rounded-xl border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 text-sm text-muted-foreground hover:text-foreground transition-all flex items-center justify-center gap-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Add more images ({formData.images.length}/4)
+                      </button>
+                    )}
+                  </>
                 ) : (
-                  <video
-                    src={formData.videoUrl}
-                    controls
-                    className="w-full h-64 object-contain"
-                  />
+                  <div className="relative rounded-xl overflow-hidden border bg-muted">
+                    <video
+                      src={formData.videoUrl}
+                      controls
+                      className="w-full h-64 object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearMedia}
+                      className="absolute top-2 right-2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  onClick={clearMedia}
-                  className="absolute top-2 right-2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
-                >
-                  <X className="w-4 h-4" />
-                </button>
               </div>
             ) : (
               <>
@@ -577,14 +692,6 @@ export default function SubmitPage() {
                         : "border-muted-foreground/25 hover:border-primary/50"
                     )}
                   >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept={mediaType === "image" ? "image/*" : "video/*"}
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-
                     {isUploading ? (
                       <div className="flex flex-col items-center gap-2">
                         <Loader2 className="w-8 h-8 animate-spin text-primary" />

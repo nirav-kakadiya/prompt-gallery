@@ -17,12 +17,22 @@ import {
   Loader2,
   AlertTriangle,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/ui/avatar";
 import { toast } from "sonner";
+
+interface PromptImage {
+  id: string;
+  imageUrl: string;
+  thumbnailUrl: string | null;
+  displayOrder: number;
+  caption: string | null;
+}
 
 interface PromptDetailProps {
   prompt: {
@@ -33,6 +43,7 @@ interface PromptDetailProps {
     type: PromptType;
     thumbnailUrl: string | null;
     imageUrl: string | null;
+    images?: PromptImage[];
     tags: string[];
     category: string | null;
     style: string | null;
@@ -77,11 +88,31 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
   const [isReporting, setIsReporting] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [imageLoaded, setImageLoaded] = React.useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
   const typeConfig = PROMPT_TYPES[prompt.type];
-  const imageUrl = prompt.imageUrl || prompt.thumbnailUrl;
+
+  // Handle multiple images - use images array if available, fall back to single imageUrl
+  const images = prompt.images && prompt.images.length > 0
+    ? prompt.images
+    : prompt.imageUrl
+      ? [{ id: 'primary', imageUrl: prompt.imageUrl, thumbnailUrl: prompt.thumbnailUrl, displayOrder: 0, caption: null }]
+      : [];
+  const hasMultipleImages = images.length > 1;
+  const currentImage = images[currentImageIndex];
+  const imageUrl = currentImage?.imageUrl || prompt.thumbnailUrl;
   const isExternalImage = imageUrl?.includes("pbs.twimg.com") || imageUrl?.includes("i.redd.it") || imageUrl?.includes("preview.redd.it") || imageUrl?.includes("imgur.com");
+
+  const goToPrevImage = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    setImageLoaded(false);
+  };
+
+  const goToNextImage = () => {
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    setImageLoaded(false);
+  };
 
   const handleCopy = async () => {
     const success = await copyToClipboard(prompt.promptText);
@@ -239,6 +270,27 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
                   }}
                 />
               )}
+              {/* Navigation Arrows for Multiple Images */}
+              {hasMultipleImages && (
+                <>
+                  <button
+                    onClick={goToPrevImage}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={goToNextImage}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  {/* Image Counter */}
+                  <div className="absolute bottom-4 right-4 px-2 py-1 rounded-lg bg-black/50 text-white text-sm backdrop-blur-sm">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-muted to-muted/50">
@@ -257,6 +309,33 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
             {typeConfig.label}
           </Badge>
         </div>
+
+        {/* Thumbnail Strip for Multiple Images */}
+        {hasMultipleImages && (
+          <div className="flex gap-2 mt-3">
+            {images.map((img, index) => (
+              <button
+                key={img.id}
+                onClick={() => {
+                  setCurrentImageIndex(index);
+                  setImageLoaded(false);
+                }}
+                className={cn(
+                  "relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
+                  index === currentImageIndex
+                    ? "border-primary ring-2 ring-primary/30"
+                    : "border-transparent hover:border-muted-foreground/50"
+                )}
+              >
+                <img
+                  src={img.thumbnailUrl || img.imageUrl}
+                  alt={`Thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Stats Bar */}
         <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
