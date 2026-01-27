@@ -890,7 +890,7 @@ export default function SubmitPage() {
                 Author Profile Link
               </label>
               <p className="text-xs text-muted-foreground mb-2">
-                Add your social profile (Twitter/X, portfolio, etc.) or the original creator's profile if sharing someone else's prompt
+                Add your social profile (Twitter/X, portfolio, etc.) or the original creator&apos;s profile if sharing someone else&apos;s prompt
               </p>
               <Input
                 id="authorProfileLink"

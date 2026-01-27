@@ -190,7 +190,7 @@ function GalleryContent() {
                       <Tooltip key={item.mode}>
                         <TooltipTrigger asChild>
                           <button
-                            onClick={() => setViewMode(item.mode as any)}
+                            onClick={() => setViewMode(item.mode as "grid" | "list" | "masonry" | "compact")}
                             className={cn(
                               "p-2 rounded-lg transition-all duration-200",
                               viewMode === item.mode

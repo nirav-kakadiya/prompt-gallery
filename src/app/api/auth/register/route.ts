@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
 
     // Create or update profile with auto-generated defaults
     // Try to update first (in case Supabase trigger created it)
-    let profile = await prisma.profile.findUnique({
+    const profile = await prisma.profile.findUnique({
       where: { id: authData.user.id },
       select: { id: true }
     });
