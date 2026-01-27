@@ -43,7 +43,7 @@ export function LandingHeader() {
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <span className="font-black text-lg tracking-[-0.05em] uppercase">
-              Prompt<span className="text-muted-foreground/40">Lab</span>
+              Prompt<span className="text-muted-foreground/60">Lab</span>
             </span>
           </Link>
 
@@ -78,9 +78,11 @@ export function LandingHeader() {
           </div>
 
           {/* Mobile Toggle */}
-          <button 
+          <button
             className="md:hidden p-2 text-muted-foreground"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? <X /> : <Menu />}
           </button>

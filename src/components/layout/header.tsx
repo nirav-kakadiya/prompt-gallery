@@ -119,12 +119,12 @@ export function Header({ onSearch }: HeaderProps) {
       <div className="w-full px-6 sm:px-10 lg:px-12 xl:px-16">
         <div className="flex items-center justify-between h-14 md:h-16">
           {/* Minimalist Logo */}
-          <Link href="/gallery" className="flex items-center gap-3 group shrink-0">
+          <Link href="/gallery" className="flex items-center gap-3 group shrink-0" aria-label="PromptLab - Go to gallery">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20 transition-transform group-hover:rotate-12">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-black text-lg tracking-[-0.05em] uppercase hidden sm:block">
-              Prompt<span className="text-muted-foreground/40">Lab</span>
+            <span className="font-black text-lg tracking-[-0.05em] uppercase hidden sm:block" aria-hidden="true">
+              Prompt<span className="text-muted-foreground/60">Lab</span>
             </span>
           </Link>
 
@@ -161,6 +161,7 @@ export function Header({ onSearch }: HeaderProps) {
             <button
               onClick={toggleDarkMode}
               className="p-2 text-muted-foreground hover:text-primary transition-colors"
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
             >
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
@@ -236,6 +237,8 @@ export function Header({ onSearch }: HeaderProps) {
             <button
               className="md:hidden p-2 text-muted-foreground"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>

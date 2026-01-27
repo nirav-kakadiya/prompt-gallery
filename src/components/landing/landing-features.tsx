@@ -57,7 +57,7 @@ export function LandingFeatures() {
             <h3 className="text-5xl md:text-7xl font-black tracking-[-0.04em] leading-[0.9] mb-10">
               BUILDING <br />
               BETTER <br />
-              <span className="text-muted-foreground/20">INTELLIGENCE.</span>
+              <span className="text-muted-foreground/50">INTELLIGENCE.</span>
             </h3>
             <p className="text-muted-foreground text-lg font-medium leading-relaxed max-w-sm">
               We&apos;ve reimagined the prompt workflow from the ground up, focusing on precision, repeatability, and artistic control.

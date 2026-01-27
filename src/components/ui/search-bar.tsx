@@ -118,7 +118,7 @@ export function SearchBar({
           sizeClasses[size]
         )}
       >
-        <div className="absolute left-5 text-muted-foreground/40 pointer-events-none">
+        <div className="absolute left-5 text-muted-foreground/60 pointer-events-none">
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -141,7 +141,7 @@ export function SearchBar({
           autoFocus={autoFocus}
           className={cn(
             "w-full bg-transparent pl-12 pr-12 outline-none font-medium",
-            "text-foreground placeholder:text-muted-foreground/30",
+            "text-foreground placeholder:text-muted-foreground/50",
             sizeClasses[size]
           )}
         />
@@ -158,7 +158,7 @@ export function SearchBar({
                 variant="ghost"
                 size="icon-sm"
                 onClick={handleClear}
-                className="h-8 w-8 rounded-full text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-colors"
+                className="h-8 w-8 rounded-full text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>

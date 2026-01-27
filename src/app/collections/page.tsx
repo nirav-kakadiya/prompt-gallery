@@ -215,7 +215,7 @@ export default function CollectionsPage() {
                                 key={`empty-${i}`}
                                 className="bg-muted-foreground/10 flex items-center justify-center"
                               >
-                                <ImageIcon className="w-6 h-6 text-muted-foreground/30" />
+                                <ImageIcon className="w-6 h-6 text-muted-foreground/50" />
                               </div>
                             )
                           )}

@@ -116,7 +116,7 @@ export function GallerySection() {
                 <motion.p 
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
-                  className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40"
+                  className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60"
                 >
                   {isLoading
                     ? "Initializing Lab..."
@@ -164,7 +164,7 @@ export function GallerySection() {
                         exit={{ opacity: 0, width: 0 }}
                         className="flex items-center gap-4 px-4 border-l border-border/40 ml-1 h-6 overflow-hidden"
                       >
-                        <span className="hidden min-[450px]:inline text-[9px] font-black uppercase tracking-widest text-muted-foreground/30 whitespace-nowrap">
+                        <span className="hidden min-[450px]:inline text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 whitespace-nowrap">
                           Grid Size
                         </span>
                         <input
@@ -205,7 +205,7 @@ export function GallerySection() {
                   {hasActiveFilters && (
                     <button 
                       onClick={clearFilters} 
-                      className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-primary transition-colors px-4"
+                      className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 hover:text-primary transition-colors px-4"
                     >
                       Reset
                     </button>

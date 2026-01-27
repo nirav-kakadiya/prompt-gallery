@@ -60,7 +60,7 @@ export function PageHeader({
     <div className={cn("py-12 sm:py-20", className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <nav className="mb-6">
-          <ol className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+          <ol className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
             {breadcrumbs.map((crumb, index) => (
               <React.Fragment key={index}>
                 {index > 0 && <span className="text-border">/</span>}

@@ -130,7 +130,7 @@ export function LandingHero() {
                       <div className="w-2.5 h-2.5 rounded-full bg-border/40" />
                       <div className="w-2.5 h-2.5 rounded-full bg-border/40" />
                    </div>
-                   <div className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground/40 uppercase">
+                   <div className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground/60 uppercase">
                      prompt-gallery.v1
                    </div>
                    <div className="w-10" />

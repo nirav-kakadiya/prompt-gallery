@@ -36,7 +36,9 @@
       "Bash(git push:*)",
       "Bash(tasklist:*)",
       "Bash(npx prisma db execute:*)",
-      "Bash(del \"D:\\\\anthropic\\\\prompt-gallery\\\\add_column.sql\")"
+      "Bash(del \"D:\\\\anthropic\\\\prompt-gallery\\\\add_column.sql\")",
+      "Bash(git commit:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }

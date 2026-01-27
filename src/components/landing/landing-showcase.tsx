@@ -77,7 +77,7 @@ export function LandingShowcase() {
               The Showcase
             </h2>
             <p className="text-4xl md:text-6xl font-black tracking-[-0.03em] leading-tight">
-              Where <span className="text-muted-foreground/30 italic">art</span> meets <br /> 
+              Where <span className="text-muted-foreground/50 italic">art</span> meets <br /> 
               algorithmic precision.
             </p>
           </div>
@@ -140,7 +140,7 @@ function ShowcaseItem({ item, speed, index }: { item: typeof prompts[0]; speed: 
         </div>
       </div>
       <div className="mt-6 flex justify-between items-center px-4">
-         <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/40">
+         <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">
            Ref. 0{index + 1}
          </span>
          <div className="w-8 h-[1px] bg-border/50" />

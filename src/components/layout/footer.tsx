@@ -62,7 +62,7 @@ export function Footer() {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="font-black text-lg tracking-[-0.05em] uppercase">
-                Prompt<span className="text-muted-foreground/40">Lab</span>
+                Prompt<span className="text-muted-foreground/60">Lab</span>
               </span>
             </Link>
             <p className="mt-8 text-sm text-muted-foreground/60 leading-relaxed font-medium max-w-xs">
@@ -75,7 +75,7 @@ export function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-muted-foreground/40 hover:text-primary transition-colors"
+                  className="text-muted-foreground/60 hover:text-primary transition-colors"
                   aria-label={social.label}
                 >
                   <social.icon className="w-5 h-5" />
@@ -108,10 +108,10 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-24 pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
             &copy; {new Date().getFullYear()} PromptLab Intelligence Systems.
           </p>
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
             <span>Crafted with</span>
             <Heart className="w-3 h-3 text-primary fill-primary" />
             <span>by Creators</span>

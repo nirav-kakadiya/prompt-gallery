@@ -376,7 +376,7 @@ export default function ProfilePage() {
                         exit={{ opacity: 0, width: 0 }}
                         className="flex items-center gap-3 px-3 border-l ml-1 h-6 overflow-hidden"
                       >
-                        <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground/40 whitespace-nowrap">
+                        <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground/60 whitespace-nowrap">
                           Size
                         </span>
                         <input

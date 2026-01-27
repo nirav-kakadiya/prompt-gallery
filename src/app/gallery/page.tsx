@@ -215,7 +215,7 @@ function GalleryContent() {
                         exit={{ opacity: 0, width: 0 }}
                         className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 border-l ml-1 h-6 overflow-hidden"
                       >
-                        <span className="hidden min-[450px]:inline text-[10px] font-black uppercase tracking-tighter text-muted-foreground/40 whitespace-nowrap">
+                        <span className="hidden min-[450px]:inline text-[10px] font-black uppercase tracking-tighter text-muted-foreground/60 whitespace-nowrap">
                           Size
                         </span>
                         <input
@@ -242,9 +242,10 @@ function GalleryContent() {
                     size="sm"
                     onClick={toggleSidebar}
                     className="lg:hidden h-10 px-3"
+                    aria-label="Toggle filters"
                   >
                     <SlidersHorizontal className="w-4 h-4" />
-                    <span className="hidden min-[450px]:inline ml-2 text-xs font-semibold">Filters</span>
+                    <span className="hidden min-[450px]:inline ml-2 text-xs font-semibold" aria-hidden="true">Filters</span>
                     {hasActiveFilters && (
                       <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
                         {types.length + tags.length + (query ? 1 : 0)}
