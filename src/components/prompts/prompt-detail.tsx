@@ -16,6 +16,7 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
 import { cn, formatNumber, copyToClipboard, PROMPT_TYPES, type PromptType } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,8 @@ interface PromptDetailProps {
     tags: string[];
     category: string | null;
     style: string | null;
+    sourceUrl?: string | null;
+    authorProfileLink?: string | null;
     author: {
       id: string;
       name: string | null;
@@ -49,6 +52,8 @@ interface PromptDetailProps {
       model?: string;
       negativePrompt?: string;
       parameters?: Record<string, unknown>;
+      sourceUrl?: string;
+      authorProfileLink?: string;
     };
   };
   isLiked?: boolean;
@@ -448,6 +453,38 @@ export function PromptDetail({ prompt, isLiked = false, onCopy, onLike }: Prompt
                       </span>
                       <span className="text-sm">{prompt.metadata.negativePrompt}</span>
                     </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Optional Links Section */}
+            {(prompt.sourceUrl || prompt.authorProfileLink) && (
+              <div className="space-y-3">
+                <h2 className="text-lg font-semibold">Links</h2>
+                <div className="flex flex-col gap-2">
+                  {prompt.authorProfileLink && (
+                    <a
+                      href={prompt.authorProfileLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 hover:underline transition-colors group"
+                    >
+                      <ExternalLink className="h-4 w-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                      <span>Author Profile</span>
+                    </a>
+                  )}
+
+                  {prompt.sourceUrl && (
+                    <a
+                      href={prompt.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 hover:underline transition-colors group"
+                    >
+                      <ExternalLink className="h-4 w-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                      <span>Source / Inspiration</span>
+                    </a>
                   )}
                 </div>
               </div>

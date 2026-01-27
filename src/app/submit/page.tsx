@@ -81,6 +81,8 @@ export default function SubmitPage() {
     imageUrl: "",
     thumbnailUrl: "",
     videoUrl: "",
+    sourceUrl: "",
+    authorProfileLink: "",
   });
   const [tagInput, setTagInput] = React.useState("");
   const [mediaSource, setMediaSource] = React.useState<MediaSource>("upload");
@@ -304,6 +306,25 @@ export default function SubmitPage() {
       return;
     }
 
+    // Validate URLs if provided
+    if (formData.sourceUrl && formData.sourceUrl.trim()) {
+      try {
+        new URL(formData.sourceUrl);
+      } catch {
+        toast.error("Please enter a valid Source Link URL");
+        return;
+      }
+    }
+
+    if (formData.authorProfileLink && formData.authorProfileLink.trim()) {
+      try {
+        new URL(formData.authorProfileLink);
+      } catch {
+        toast.error("Please enter a valid Author Profile Link URL");
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -319,6 +340,8 @@ export default function SubmitPage() {
           imageUrl: formData.imageUrl || null,
           thumbnailUrl: formData.thumbnailUrl || null,
           videoUrl: formData.videoUrl || null,
+          sourceUrl: formData.sourceUrl.trim() || undefined,
+          authorProfileLink: formData.authorProfileLink.trim() || undefined,
         }),
       });
 
@@ -726,6 +749,50 @@ export default function SubmitPage() {
                     ))}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Optional Links Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <LinkIcon className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium">Optional Links</h3>
+            </div>
+
+            {/* Source Link */}
+            <div>
+              <label htmlFor="sourceUrl" className="block text-sm font-medium text-muted-foreground mb-1">
+                Source / Inspiration Link
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Add a link to where you found this prompt or what inspired it (article, tutorial, post, etc.)
+              </p>
+              <Input
+                id="sourceUrl"
+                type="url"
+                placeholder="https://example.com/inspiration"
+                value={formData.sourceUrl}
+                onChange={(e) => setFormData(prev => ({ ...prev, sourceUrl: e.target.value }))}
+                className="w-full"
+              />
+            </div>
+
+            {/* Author Profile Link */}
+            <div>
+              <label htmlFor="authorProfileLink" className="block text-sm font-medium text-muted-foreground mb-1">
+                Author Profile Link
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Add your social profile (Twitter/X, portfolio, etc.) or the original creator's profile if sharing someone else's prompt
+              </p>
+              <Input
+                id="authorProfileLink"
+                type="url"
+                placeholder="https://x.com/username or https://yoursite.com"
+                value={formData.authorProfileLink}
+                onChange={(e) => setFormData(prev => ({ ...prev, authorProfileLink: e.target.value }))}
+                className="w-full"
+              />
             </div>
           </div>
 

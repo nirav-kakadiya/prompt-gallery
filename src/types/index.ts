@@ -40,6 +40,7 @@ export interface PromptMetadata {
     [key: string]: unknown;
   };
   sourceUrl?: string;
+  authorProfileLink?: string;
   submissionSource?: "web" | "extension" | "api";
 }
 
@@ -61,6 +62,10 @@ export interface Prompt {
   tags: string[];
   category: string | null;
   style: string | null;
+
+  // Source & Attribution
+  sourceUrl: string | null;
+  authorProfileLink: string | null;
 
   // Author
   authorId: string | null;

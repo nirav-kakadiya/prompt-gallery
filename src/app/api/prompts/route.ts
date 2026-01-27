@@ -210,6 +210,8 @@ export async function POST(request: NextRequest) {
       imageUrl,
       thumbnailUrl,
       videoUrl,
+      sourceUrl,
+      authorProfileLink,
     } = body;
 
     // Validation
@@ -228,6 +230,29 @@ export async function POST(request: NextRequest) {
     }
     if (tags && tags.length > 10) {
       validationErrors.push({ field: "tags", message: "Maximum 10 tags allowed" });
+    }
+
+    // Validate URLs if provided
+    if (sourceUrl) {
+      try {
+        new URL(sourceUrl);
+      } catch {
+        validationErrors.push({
+          field: "sourceUrl",
+          message: "Source URL must be a valid URL"
+        });
+      }
+    }
+
+    if (authorProfileLink) {
+      try {
+        new URL(authorProfileLink);
+      } catch {
+        validationErrors.push({
+          field: "authorProfileLink",
+          message: "Author Profile Link must be a valid URL"
+        });
+      }
     }
 
     if (validationErrors.length > 0) {
@@ -312,6 +337,8 @@ export async function POST(request: NextRequest) {
           imageUrl: imageUrl || null,
           thumbnailUrl: thumbnailUrl || null,
           videoUrl: videoUrl || null,
+          sourceUrl: sourceUrl || null,
+          authorProfileLink: authorProfileLink || null,
           status: "published",
           publishedAt: new Date(),
           ...(user && { authorId: user.id }),
