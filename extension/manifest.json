@@ -12,7 +12,8 @@
     "contextMenus",
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "identity"
   ],
   "host_permissions": [
     "https://prompt-gallery-six.vercel.app/*",
