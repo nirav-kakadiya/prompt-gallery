@@ -407,7 +407,33 @@ export default function SubmitPage() {
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error?.message || "Failed to submit prompt");
+        // Check if it's a duplicate prompt error
+        if (data.error?.code === "DUPLICATE_PROMPT" && data.error?.existingPrompt) {
+          const { title, slug } = data.error.existingPrompt;
+
+          // Show error toast with clickable link to existing prompt
+          toast.error("Submission failed", {
+            description: (
+              <div className="space-y-2">
+                <p>{data.error.message}</p>
+                <button
+                  onClick={() => router.push(`/prompts/${slug}`)}
+                  className="text-sm font-medium underline hover:no-underline text-primary"
+                >
+                  View existing prompt: {title}
+                </button>
+              </div>
+            ),
+            duration: 8000, // Longer duration for user to read and click
+          });
+        } else {
+          // Regular error
+          toast.error("Submission failed", {
+            description: data.error?.message || "Please try again",
+          });
+        }
+        setIsLoading(false);
+        return;
       }
 
       toast.success("Prompt submitted!", {

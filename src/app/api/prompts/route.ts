@@ -352,12 +352,25 @@ export async function POST(request: NextRequest) {
         error.code === "P2002" &&
         (error.meta?.target as string[])?.includes("prompt_text_hash")
       ) {
+        // Fetch the existing prompt details
+        const existingPrompt = await prisma.prompt.findUnique({
+          where: { promptTextHash },
+          select: {
+            title: true,
+            slug: true,
+          },
+        });
+
         return NextResponse.json(
           {
             success: false,
             error: {
               code: "DUPLICATE_PROMPT",
               message: "This prompt already exists. Please try a different prompt text.",
+              existingPrompt: existingPrompt ? {
+                title: existingPrompt.title,
+                slug: existingPrompt.slug,
+              } : null,
             },
           },
           { status: 409 }
