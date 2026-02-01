@@ -11,6 +11,14 @@ import { useAuthStore } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import type { PromptType } from "@/lib/utils";
 
+interface PromptImage {
+  id: string;
+  imageUrl: string;
+  thumbnailUrl: string | null;
+  displayOrder: number;
+  caption: string | null;
+}
+
 interface PromptData {
   id: string;
   title: string;
@@ -23,6 +31,7 @@ interface PromptData {
   tags: string[];
   category: string | null;
   style: string | null;
+  images?: PromptImage[];
   author: {
     id: string;
     name: string | null;
@@ -107,7 +116,7 @@ export function PromptDetailClient({ prompt, relatedPrompts }: PromptDetailClien
             setIsLiked(data.data.liked);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [isAuthenticated, prompt.id]);
 
@@ -156,6 +165,7 @@ export function PromptDetailClient({ prompt, relatedPrompts }: PromptDetailClien
         <PromptDetail
           prompt={{
             ...prompt,
+            images: prompt.images,
             likeCount,
             createdAt: typeof prompt.createdAt === 'string' ? prompt.createdAt : prompt.createdAt.toISOString(),
             metadata,

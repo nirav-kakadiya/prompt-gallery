@@ -20,7 +20,7 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [style, setStyle] = useState<string | undefined>(undefined);
   const [llmMetadata, setLlmMetadata] = useState<Record<string, string | undefined> | undefined>(undefined);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -38,12 +38,12 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
     // Set initial values IMMEDIATELY (don't wait for title generation)
     const finalPromptText = parsed.cleanText || pendingPrompt.text;
     setPromptText(finalPromptText);
-    
+
     // Check if we have image but no text (image-only scenario)
     const hasImage = !!(pendingPrompt.imageUrls && pendingPrompt.imageUrls.length > 0);
     const hasNoText = !finalPromptText || finalPromptText.trim().length === 0;
     setHasImageOnly(hasImage && hasNoText);
-    
+
     // Default to image-to-image (user's primary workflow)
     // Only use parsed type if it's a video type, otherwise always use image-to-image
     if (parsed.type === 'text-to-video' || parsed.type === 'image-to-video') {
@@ -51,7 +51,7 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
     } else {
       setType('image-to-image'); // Default to image-to-image for all other cases
     }
-    
+
     // Store parsed tags for later merging with LLM-generated tags
     const initialTags = parsed.tags || [];
     setTags(initialTags);
@@ -65,9 +65,9 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       setTitle(''); // Empty title when no text
     }
 
-    // Set first image if available
+    // Auto-select first image if available (default behavior)
     if (pendingPrompt.imageUrls && pendingPrompt.imageUrls.length > 0) {
-      setSelectedImage(pendingPrompt.imageUrls[0]);
+      setSelectedImages([pendingPrompt.imageUrls[0]]);
     }
 
     // Auto-generate title and tags ONLY if we have text (not image-only)
@@ -76,7 +76,7 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       // Use requestAnimationFrame to ensure UI renders first, then start generation
       requestAnimationFrame(() => {
         setIsGeneratingTitle(true);
-        
+
         // Generate title and tags asynchronously without blocking
         generateTitle(finalPromptText)
           .then((result) => {
@@ -189,7 +189,8 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       style,
       sourceUrl: pendingPrompt.sourceUrl,
       sourceType: pendingPrompt.sourceType,
-      imageUrl: selectedImage || undefined,
+      imageUrl: selectedImages[0] || undefined, // Primary image
+      images: selectedImages.length > 0 ? selectedImages.map(url => ({ url, thumbnailUrl: url })) : undefined,
       metadata: {
         ...pendingPrompt.metadata,
         ...llmMetadata,
@@ -269,8 +270,9 @@ export function PromptForm({ pendingPrompt, onSaved, onClear }: PromptFormProps)
       {pendingPrompt.imageUrls && pendingPrompt.imageUrls.length > 0 && (
         <ImagePreview
           images={pendingPrompt.imageUrls}
-          selectedImage={selectedImage}
-          onSelect={setSelectedImage}
+          selectedImages={selectedImages}
+          onSelect={setSelectedImages}
+          maxImages={4}
         />
       )}
 

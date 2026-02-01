@@ -97,7 +97,8 @@ export interface CreatePromptRequest {
   style?: string;
   sourceUrl?: string;
   sourceType?: SourceType;
-  imageUrl?: string;
+  imageUrl?: string; // Primary image (for backward compatibility)
+  images?: Array<{ url: string; thumbnailUrl: string }>; // Multiple images support
   metadata?: PromptMetadata;
 }
 

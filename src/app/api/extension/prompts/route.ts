@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       sourceUrl,
       sourceType,
       imageUrl,
+      images = [], // Support for multiple images
       metadata = {},
     } = body;
 
@@ -169,6 +170,18 @@ export async function POST(request: NextRequest) {
     }).catch(() => {
       // Profile update may fail if triggers handle it
     });
+
+    // Create PromptImage records for multiple images
+    if (images && Array.isArray(images) && images.length > 0) {
+      await prisma.promptImage.createMany({
+        data: images.map((img: { url: string; thumbnailUrl?: string }, index: number) => ({
+          promptId: prompt.id,
+          imageUrl: img.url,
+          thumbnailUrl: img.thumbnailUrl || img.url,
+          displayOrder: index,
+        })),
+      });
+    }
 
     // Fire-and-forget image generation for text-only prompts
     if (shouldGenerateImage) {
